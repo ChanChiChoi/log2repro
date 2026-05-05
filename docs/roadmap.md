@@ -68,15 +68,15 @@
 
 ---
 
-### D8 — Root Cause Analysis & Fix Recommendations (Planned)
+### D8 — Root Cause Analysis & Fix Recommendations ✅
 
-- [ ] `--analyze` CLI flag to enable root cause analysis mode
-- [ ] LLM prompt for error cause analysis (structured output: cause → impact → fix)
-- [ ] `analysis.md` output with root cause, affected code path, and fix recommendations
-- [ ] Fix suggestions ranked by confidence (high/medium/low)
-- [ ] Integration with reproduction: analysis + repro in one pipeline
-- [ ] Python API `analyze(traceback)` for programmatic use
-- [ ] Unit tests for analysis output structure and content quality
+- [x] `--analyze` CLI flag to enable root cause analysis mode
+- [x] LLM prompt for error cause analysis (structured output: cause → impact → fix)
+- [x] `analysis.md` output with root cause, affected code path, and fix recommendations
+- [x] Fix suggestions ranked by confidence (high/medium/low)
+- [x] Integration with reproduction: analysis + repro in one pipeline
+- [x] Python API `analyze(traceback)` for programmatic use
+- [x] Unit tests for analysis output structure and content quality
 
 ### D9 — Python Error Format Completeness (Planned)
 

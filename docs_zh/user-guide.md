@@ -22,6 +22,7 @@ log2repro run <input> [OPTIONS]
 |------|--------|------|
 | `-m`, `--model` | `gpt-4o` | LLM 模型标识 |
 | `-n`, `--dry-run` | `false` | 仅解析，跳过 LLM 和沙箱 |
+| `-a`, `--analyze` | `false` | 开启根因分析（输出 `analysis.md`） |
 | `-d`, `--output-dir` | `./repro_out` | 输出目录 |
 | `-o`, `--output` | - | 将 JSON 写入文件（旧模式） |
 | `--sandbox-timeout` | `10` | 沙箱执行最大秒数 |

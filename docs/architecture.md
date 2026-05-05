@@ -25,9 +25,11 @@ src/log2repro/
 │   └── ci_log.py       # CI log parser (ANSI stripping)
 ├── extractors/
 │   └── ast_parser.py   # AST context extraction
+├── models.py           # AnalysisResult, FixRecommendation data models
 ├── generators/
 │   ├── prompts.py      # System prompts + Jinja2 templates
-│   └── code_gen.py     # LLM generation + sandbox feedback
+│   ├── code_gen.py     # LLM generation + sandbox feedback
+│   └── analysis.py     # Root cause analysis generation
 ├── validators/
 │   ├── sandbox.py      # venv + subprocess execution
 │   └── auto_fix.py     # Auto-fix chain (classify → repair → degrade)
@@ -131,7 +133,7 @@ Some LLMs (Qwen3, DeepSeek-R1) return `content=None` with reasoning in `reasonin
 
 **Input:** Final files + trace info
 
-**Output:** 4 files in output directory
+**Output:** 4-5 files in output directory
 
 | File | Content |
 |------|---------|
@@ -139,6 +141,22 @@ Some LLMs (Qwen3, DeepSeek-R1) return `content=None` with reasoning in `reasonin
 | `requirements.txt` | pip dependencies |
 | `mock_data.json` | Test fixtures / mock data |
 | `README_repro.md` | Usage instructions + fix history |
+| `analysis.md` | Root cause analysis + fix recommendations (when `--analyze`) |
+
+### Stage 3.5: Root Cause Analysis (optional)
+
+**Input:** `ReproContext` (trace + AST + model)
+
+**Output:** `AnalysisResult` → `analysis.md`
+
+When `--analyze` is enabled, the pipeline also runs a root cause analysis:
+
+1. `SYSTEM_PROMPT_ANALYSIS` instructs the LLM to output structured sections
+2. `render_analysis_message()` renders the user message with trace context
+3. `_call_llm()` calls the LLM for analysis
+4. `_parse_analysis_response()` extracts sections: Root Cause, Error Type, Affected Code Path, Impact, Fix Recommendations
+5. Recommendations are sorted by confidence (HIGH → MEDIUM → LOW)
+6. `generate_analysis_markdown()` produces the final `analysis.md`
 
 ## Dependency Graph
 
@@ -150,6 +168,10 @@ cli.py
 │   ├── generators/prompts.py
 │   ├── parsers/base.py
 │   └── validators/sandbox.py
+├── generators/analysis.py
+│   ├── generators/code_gen.py (reuses _call_llm, ReproContext)
+│   ├── generators/prompts.py (SYSTEM_PROMPT_ANALYSIS)
+│   └── models.py (AnalysisResult, FixRecommendation)
 ├── validators/auto_fix.py
 │   ├── generators/code_gen.py
 │   ├── generators/prompts.py

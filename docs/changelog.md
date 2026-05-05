@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### D8 — Root Cause Analysis & Fix Recommendations
+
+- Added `--analyze` CLI flag to enable root cause analysis mode
+- New `SYSTEM_PROMPT_ANALYSIS` for structured error analysis
+- New `generate_analysis()` function in `generators/analysis.py`
+- `AnalysisResult` and `FixRecommendation` data models in `models.py`
+- `analysis.md` output with root cause, impact, and fix recommendations
+- Fix recommendations ranked by confidence (HIGH / MEDIUM / LOW)
+- Python API `analyze(traceback)` for programmatic use
+- `analysis.md` generated alongside reproduction files when `--analyze` is used
+- 31 unit tests for analysis parsing, generation, and CLI integration
+
 ### D7 — Documentation & Polish
 
 - Added comprehensive docs under `docs/` (9 files)
@@ -92,3 +104,4 @@
 | 0.1.0 | D1-D6 | Core parsing + AST + LLM + Sandbox + Eval + Parsers + Benchmarks | ~385 |
 | 0.2.0 | D7 | Documentation + PyPI packaging | ~385 |
 | 0.2.1 | D7 | --extra-body, thinking model support, CLI auto-detect | ~385 |
+| 0.3.0 | D8 | Root cause analysis + fix recommendations | ~416 |

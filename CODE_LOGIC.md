@@ -12,6 +12,7 @@
 - [4. parsers/ — 日志解析层](#4-parsers--日志解析层)
 - [5. extractors/ — AST 上下文提取](#5-extractors--ast-上下文提取)
 - [6. generators/ — LLM 代码生成](#6-generators--llm-代码生成)
+- [6.3 analysis.py — 根因分析](#63-analysispy--根因分析)
 - [7. validators/ — 沙箱验证与自动修复](#7-validators--沙箱验证与自动修复)
 - [8. eval_metrics.py — 质量评估指标](#8-eval_metricspy--质量评估指标)
 - [9. cli.py — CLI 入口与全链路编排](#9-clipy--cli-入口与全链路编排)
@@ -29,14 +30,15 @@
     ▼
 ┌──────────┐    ┌──────────────┐    ┌──────────────┐    ┌───────────────┐    ┌──────────┐
 │ parsers  │───▶│ extractors   │───▶│ generators   │───▶│ validators    │───▶│ 输出文件  │
-│ 解析日志 │    │ AST 提取     │    │ LLM 生成     │    │ 沙箱+自动修复│    │ 4 个文件  │
+│ 解析日志 │    │ AST 提取     │    │ LLM 生成     │    │ 沙箱+自动修复│    │ 4-5 个文件│
 └──────────┘    └──────────────┘    └──────────────┘    └───────────────┘    └──────────┘
 ```
 
 **职责划分：**
 - **parsers/**: 正则解析原始日志 → `ParsedTrace`
 - **extractors/**: Python `ast` 模块提取源码上下文 → `ASTContext`
-- **generators/**: 组装 prompt + 调用 LLM → `dict[str, str]`（文件字典）
+- **models.py**: 分析结果数据模型（`AnalysisResult`、`FixRecommendation`）
+- **generators/**: 组装 prompt + 调用 LLM → `dict[str, str]`（文件字典）+ 根因分析
 - **validators/**: venv 沙箱执行 + 错误分类 + LLM 自动修复循环
 - **eval_metrics.py**: 批量评估生成质量（4 个指标）
 - **cli.py**: Typer CLI，编排全链路
@@ -57,6 +59,10 @@ cli.py
 │   ├── parsers/base.py (ParsedTrace)
 │   ├── extractors/ast_parser.py (ASTContext)
 │   └── validators/sandbox.py (SandboxResult, run_in_sandbox)
+├── generators/analysis.py
+│   ├── generators/code_gen.py (_call_llm, ReproContext)
+│   ├── generators/prompts.py (SYSTEM_PROMPT_ANALYSIS)
+│   └── models.py (AnalysisResult, FixRecommendation)
 ├── validators/auto_fix.py
 │   ├── generators/code_gen.py (_call_llm, parse_llm_response)
 │   ├── generators/prompts.py (select_system_prompt)
@@ -97,6 +103,29 @@ Pydantic BaseModel，表示从源文件 AST 提取的上下文。
 | `known_vars` | `dict[str, str]` | 变量名 → 类型注解字符串 |
 
 方法：`to_context_dict()` → 转为 dict。
+
+### `FixRecommendation`（models.py）
+
+dataclass，表示一条修复建议。
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `description` | `str` | 修复建议描述 |
+| `confidence` | `str` | 置信度：`"high"` / `"medium"` / `"low"` |
+| `code_snippet` | `str` | 可选代码片段（默认空） |
+
+### `AnalysisResult`（models.py）
+
+dataclass，表示根因分析结果。
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `root_cause` | `str` | 根因分析 |
+| `error_type` | `str` | 错误分类 |
+| `affected_code_path` | `str` | 受影响代码路径 |
+| `impact` | `str` | 影响描述 |
+| `recommendations` | `list[FixRecommendation]` | 按置信度排序的修复建议 |
+| `raw_markdown` | `str` | LLM 原始 Markdown 响应 |
 
 ### `ReproContext`（generators/code_gen.py）
 
@@ -353,6 +382,53 @@ return files（最终版本）
 
 **`_validate_files(files)`：** 检查 `EXPECTED_FILES` 是否全部存在，否则抛 `ValueError`。
 
+### 6.3 analysis.py — 根因分析
+
+**数据模型（models.py）：**
+
+`FixRecommendation` dataclass：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `description` | `str` | 修复建议描述 |
+| `confidence` | `str` | 置信度：`"high"` / `"medium"` / `"low"` |
+| `code_snippet` | `str` | 可选代码片段 |
+
+`AnalysisResult` dataclass：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `root_cause` | `str` | 根因分析 |
+| `error_type` | `str` | 错误分类 |
+| `affected_code_path` | `str` | 受影响代码路径 |
+| `impact` | `str` | 影响描述 |
+| `recommendations` | `list[FixRecommendation]` | 按置信度排序的修复建议 |
+| `raw_markdown` | `str` | LLM 原始 Markdown 响应 |
+
+**系统提示 `SYSTEM_PROMPT_ANALYSIS`：**
+要求 LLM 输出 5 个结构化节：Root Cause、Error Type、Affected Code Path、Impact、Fix Recommendations。每个修复建议须带 `[HIGH]`/`[MEDIUM]`/`[LOW]` 置信度标签。
+
+**`generate_analysis(context, *, temperature, max_tokens, extra_body=None)`：**
+1. 使用 `SYSTEM_PROMPT_ANALYSIS` 作为系统提示
+2. `render_analysis_message()` 渲染用户消息（复用 `ReproContext.to_prompt_vars()` 变量）
+3. `_call_llm()` 调用 LLM
+4. `_parse_analysis_response()` 解析 Markdown → `AnalysisResult`
+
+**`_parse_analysis_response(raw_text)`：**
+- 用 `_extract_section(text, name)` 按 `## ` 标题分割提取各节内容
+- 用正则 `\[HIGH\]`/`\[MEDIUM\]`/`\[LOW\]` 提取修复建议
+- 提取代码片段（`` ```python ... ``` ``）
+- 按置信度排序：high → medium → low
+
+**`generate_analysis_markdown(result, trace)`：**
+生成 `analysis.md` 内容：元数据头 + Root Cause + Error Type + Affected Code Path + Impact + 修复建议表格 + 代码片段。
+
+**`analyze(traceback_text, *, model, extra_body=None)`（Python API）：**
+1. `_detect_parser()` 自动检测格式
+2. 解析 → 提取 AST 上下文
+3. 构建 `ReproContext`
+4. 调用 `generate_analysis()`
+
 ---
 
 ## 7. validators/ — 沙箱验证与自动修复
@@ -528,6 +604,7 @@ return FixResult(degraded=True, suggestions=_build_fix_suggestions(...))
 | `--sandbox-timeout` | Option | 沙箱超时（默认 10s） |
 | `--max-refine` | Option | 最大修正轮次（默认 2） |
 | `--extra-body` | Option | LLM API 额外 JSON 参数（如 `'{"enable_thinking": false}'`） |
+| `--analyze` / `-a` | Option | 开启根因分析（输出 `analysis.md`） |
 | `--verbose` / `-v` | Option | 详细日志 |
 
 **全链路流程 `run()`：**
@@ -564,8 +641,13 @@ _run_full_pipeline(..., extra_body=...)
   ├── _generate_readme(trace, fix_result, model)
   │     └── 生成 README_repro.md（错误信息 + 调用链 + 使用方法 + 修复历史）
   │
+  ├── if analyze:
+  │     generate_analysis(ctx, extra_body=...)    # generators/analysis.py
+  │     generate_analysis_markdown(result, trace)
+  │     └── 写入 analysis.md（根因 + 影响 + 修复建议）
+  │
   └── _write_to_dir(output_dir, files, trace)
-        └── 写入 reproduce.py, requirements.txt, mock_data.json, README_repro.md
+        └── 写入 reproduce.py, requirements.txt, mock_data.json, README_repro.md [, analysis.md]
 ```
 
 **`_try_extract_ast(file_path, target_line, chain)`：**
@@ -699,12 +781,28 @@ files: dict[str, str]
   ├── if fixable → _call_llm(fix_messages) → 修正 files
   └── 最终 FixResult(success/degraded, files, suggestions)
   │
+  ▼ (若 --analyze)
+[generate_analysis]
+  ├── SYSTEM_PROMPT_ANALYSIS → 分析专用系统提示
+  ├── render_analysis_message(...) → 用户消息
+  ├── _call_llm(model, messages, extra_body=...) → 分析响应
+  └── _parse_analysis_response(raw_text) → AnalysisResult
+        ├── root_cause: str
+        ├── error_type: str
+        ├── affected_code_path: str
+        ├── impact: str
+        └── recommendations: list[FixRecommendation]（按置信度排序）
+  │
+  ▼
+[generate_analysis_markdown] → analysis.md
+  │
   ▼
 [输出文件]
   ├── reproduce.py        — 最小复现脚本
   ├── requirements.txt    — 依赖清单
   ├── mock_data.json      — Mock 数据
-  └── README_repro.md     — 使用说明 + 修复历史
+  ├── README_repro.md     — 使用说明 + 修复历史
+  └── analysis.md         — 根因分析 + 修复推荐（--analyze 时）
 ```
 
 ---

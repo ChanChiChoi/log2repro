@@ -16,7 +16,7 @@
 
 ## Development
 
-- [Architecture](architecture.md) — 5-stage pipeline, module map, design decisions, data flow
+- [Architecture](architecture.md) — 6-stage pipeline (with analysis), module map, design decisions, data flow
 - [Contributing](contributing.md) — Dev setup, testing, code style, PR process
-- [Changelog](changelog.md) — Version history (D1–D7)
+- [Changelog](changelog.md) — Version history (D1–D8)
 - [Roadmap](roadmap.md) — Milestones, completed & planned features

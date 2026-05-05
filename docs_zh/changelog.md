@@ -2,6 +2,18 @@
 
 ## [未发布]
 
+### D8 — 问题原因分析与修复推荐
+
+- 新增 `--analyze` CLI 参数，开启根因分析模式
+- 新增 `SYSTEM_PROMPT_ANALYSIS` 分析专用系统提示
+- 新增 `generators/analysis.py` 中的 `generate_analysis()` 函数
+- `AnalysisResult` 和 `FixRecommendation` 数据模型（`models.py`）
+- `analysis.md` 输出：根因、影响、修复推荐
+- 修复建议按置信度排序（HIGH / MEDIUM / LOW）
+- Python API `analyze(traceback)` 支持编程调用
+- 使用 `--analyze` 时与复现文件同时输出 `analysis.md`
+- 31 个单元测试覆盖解析、生成、CLI 集成
+
 ### D7 — 文档与打磨
 
 - 在 `docs/` 下添加完整文档（9 个文件）
@@ -92,3 +104,4 @@
 | 0.1.0 | D1-D6 核心解析+AST+LLM+沙箱+评估+解析器+基准测试 | ~385 |
 | 0.2.0 | D7 文档 + PyPI 打包 | ~385 |
 | 0.2.1 | D7 --extra-body、思考模型支持、CLI 自动检测 | ~385 |
+| 0.3.0 | D8 根因分析 + 修复推荐 | ~416 |

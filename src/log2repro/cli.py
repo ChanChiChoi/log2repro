@@ -85,6 +85,12 @@ def run(
         "-n",
         help="Parse only; skip LLM generation and sandbox validation.",
     ),
+    analyze: bool = typer.Option(
+        False,
+        "--analyze",
+        "-a",
+        help="Enable root cause analysis mode (outputs analysis.md).",
+    ),
     output_dir: Optional[str] = typer.Option(
         None,
         "--output-dir",
@@ -123,6 +129,7 @@ def run(
 
     Full pipeline: parse → generate → sandbox → auto-fix → output.
     With ``--dry-run``: parse only, output structured JSON.
+    With ``--analyze``: also generate root cause analysis (analysis.md).
     """
     _setup_logging(verbose)
 
@@ -181,6 +188,7 @@ def run(
         sandbox_timeout=sandbox_timeout,
         max_refine=max_refine,
         extra_body=parsed_extra_body,
+        analyze=analyze,
     )
 
 
@@ -210,8 +218,10 @@ def _run_full_pipeline(
     sandbox_timeout: int,
     max_refine: int,
     extra_body: dict[str, object] | None = None,
+    analyze: bool = False,
 ) -> None:
     """Execute the full generate → sandbox → auto-fix pipeline."""
+    from log2repro.generators.analysis import generate_analysis, generate_analysis_markdown
     from log2repro.generators.code_gen import ReproContext, generate_repro_script
     from log2repro.validators.auto_fix import auto_fix_loop
     from log2repro.validators.sandbox import run_in_sandbox
@@ -265,6 +275,17 @@ def _run_full_pipeline(
     readme = _generate_readme(trace, fix_result, model)
     final_files["README_repro.md"] = readme
 
+    # Step 3.5: Root cause analysis (if --analyze)
+    if analyze:
+        console.print("[blue]Generating[/blue] root cause analysis...")
+        try:
+            analysis_result = generate_analysis(ctx, extra_body=extra_body)
+            analysis_md = generate_analysis_markdown(analysis_result, trace)
+            final_files["analysis.md"] = analysis_md
+            console.print("[green]Analysis complete.[/green]")
+        except RuntimeError as exc:
+            console.print(f"[yellow]Analysis failed:[/yellow] {exc}")
+
     # Step 4: Write output
     if output_dir:
         _write_to_dir(output_dir, final_files, trace)
@@ -304,6 +325,7 @@ def _write_to_dir(dir_path: str, files: dict[str, str], trace) -> None:
             "requirements.txt": "依赖清单",
             "mock_data.json": "Mock 数据",
             "README_repro.md": "使用说明",
+            "analysis.md": "根因分析",
         }.get(name, "")
         table.add_row(name, size, desc)
     console.print(table)
@@ -412,6 +434,49 @@ def _try_extract_ast(
         )
     except (SyntaxError, OSError):
         return None
+
+
+def analyze(
+    traceback_text: str,
+    *,
+    model: str = "gpt-4o",
+    extra_body: dict[str, object] | None = None,
+) -> "AnalysisResult":
+    """Perform root cause analysis on a traceback string.
+
+    This is the Python API equivalent of ``log2repro run --analyze``.
+
+    Args:
+        traceback_text: Raw traceback text to analyze.
+        model: LLM model identifier.
+        extra_body: Additional parameters passed to the LLM API.
+
+    Returns:
+        An :class:`AnalysisResult` with structured analysis.
+
+    Raises:
+        ValueError: If no trace can be extracted from the input.
+        RuntimeError: If the LLM call fails.
+    """
+    from log2repro.generators.analysis import generate_analysis
+    from log2repro.generators.code_gen import ReproContext
+    from log2repro.models import AnalysisResult  # noqa: F811
+
+    parser = _detect_parser(traceback_text)
+    traces = parser.parse(traceback_text)
+    if not traces:
+        raise ValueError("Could not extract any trace from the input.")
+
+    trace = traces[0]
+    ast_context = _try_extract_ast(trace.file, trace.line, trace.chain)
+
+    ctx = ReproContext(
+        trace=trace,
+        ast_context=ast_context or ASTContext(),
+        model=model,
+    )
+
+    return generate_analysis(ctx, extra_body=extra_body)
 
 
 if __name__ == "__main__":

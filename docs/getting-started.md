@@ -302,6 +302,18 @@ for name, content in files.items():
     print(f"Written: {name}")
 ```
 
+### Root Cause Analysis (Python API)
+
+```python
+from log2repro import analyze
+
+result = analyze(Path("error.log").read_text(), model="gpt-4o")
+print(f"Root cause: {result.root_cause}")
+print(f"Error type: {result.error_type}")
+for rec in result.recommendations:
+    print(f"  [{rec.confidence.upper()}] {rec.description}")
+```
+
 ### Batch Processing Multiple Logs
 
 ```bash

@@ -25,9 +25,11 @@ src/log2repro/
 │   └── ci_log.py       # CI 日志解析器（ANSI 剥离）
 ├── extractors/
 │   └── ast_parser.py   # AST 上下文提取
+├── models.py           # AnalysisResult、FixRecommendation 数据模型
 ├── generators/
 │   ├── prompts.py      # 系统提示 + Jinja2 模板
-│   └── code_gen.py     # LLM 生成 + 沙箱反馈
+│   ├── code_gen.py     # LLM 生成 + 沙箱反馈
+│   └── analysis.py     # 根因分析生成
 ├── validators/
 │   ├── sandbox.py      # venv + 子进程执行
 │   └── auto_fix.py     # 自动修复链（分类 → 修复 → 降级）
@@ -131,7 +133,7 @@ AST 提取提供**硬约束**（真实变量名、实际 import、函数签名�
 
 **输入：** 最终文件 + trace 信息
 
-**输出：** 输出目录中的 4 个文件
+**输出：** 输出目录中的 4-5 个文件
 
 | 文件 | 内容 |
 |------|------|
@@ -139,6 +141,22 @@ AST 提取提供**硬约束**（真实变量名、实际 import、函数签名�
 | `requirements.txt` | pip 依赖 |
 | `mock_data.json` | 测试夹具 / mock 数据 |
 | `README_repro.md` | 使用说明 + 修复历史 |
+| `analysis.md` | 根因分析 + 修复推荐（`--analyze` 时生成） |
+
+### 阶段 3.5：根因分析（可选）
+
+**输入：** `ReproContext`（trace + AST + model）
+
+**输出：** `AnalysisResult` → `analysis.md`
+
+启用 `--analyze` 时，流水线同时运行根因分析：
+
+1. `SYSTEM_PROMPT_ANALYSIS` 指示 LLM 输出结构化分析
+2. `render_analysis_message()` 渲染带 trace 上下文的用户消息
+3. `_call_llm()` 调用 LLM 进行分析
+4. `_parse_analysis_response()` 提取各节：Root Cause、Error Type、Affected Code Path、Impact、Fix Recommendations
+5. 修复建议按置信度排序（HIGH → MEDIUM → LOW）
+6. `generate_analysis_markdown()` 生成最终 `analysis.md`
 
 ## 依赖关系图
 
@@ -150,6 +168,10 @@ cli.py
 │   ├── generators/prompts.py
 │   ├── parsers/base.py
 │   └── validators/sandbox.py
+├── generators/analysis.py
+│   ├── generators/code_gen.py（复用 _call_llm、ReproContext）
+│   ├── generators/prompts.py（SYSTEM_PROMPT_ANALYSIS）
+│   └── models.py（AnalysisResult、FixRecommendation）
 ├── validators/auto_fix.py
 │   ├── generators/code_gen.py
 │   ├── generators/prompts.py

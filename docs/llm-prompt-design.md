@@ -200,6 +200,57 @@ Output the complete fixed reproduce.py.
 | `TypeError` | Check function signature and argument types |
 | `FileNotFoundError` | Use mock_data.json or create temp files |
 
+## Analysis Prompt
+
+When `--analyze` is enabled, a separate system prompt guides the LLM in performing root cause analysis:
+
+### SYSTEM_PROMPT_ANALYSIS
+
+**For structured error analysis** (cause → impact → fix).
+
+The LLM is instructed to output exactly 5 sections:
+1. **Root Cause** — WHY the error occurs (beyond the symptom)
+2. **Error Type** — Classification (e.g. "TypeError — NoneType operation")
+3. **Affected Code Path** — Where the fix should be applied
+4. **Impact** — What functionality breaks, user-facing symptoms
+5. **Fix Recommendations** — 1-3 fixes with `[HIGH]`/`[MEDIUM]`/`[LOW]` confidence tags
+
+Each recommendation may include a code snippet. Recommendations are parsed and sorted by confidence in the output `analysis.md`.
+
+### Analysis User Template
+
+Uses the same Jinja2 variables as the reproduction template (`ANALYSIS_USER_TEMPLATE`), ensuring the LLM has full context for analysis.
+
+### Analysis Output Format
+
+```markdown
+## Root Cause
+
+The function receives None because the upstream API returns empty body on 404.
+
+## Error Type
+
+TypeError — NoneType attribute access
+
+## Affected Code Path
+
+`process_data()` at line 42
+
+## Impact
+
+The entire request fails with a 500 error.
+
+## Fix Recommendations
+
+[HIGH] Add a None check before accessing user_id.
+```python
+if data.get("user_id") is None:
+    raise ValueError("user_id must not be None")
+```
+
+[MEDIUM] Use a default value or raise early.
+```
+
 ## Anti-Hallucination Measures
 
 ### 1. AST Grounding

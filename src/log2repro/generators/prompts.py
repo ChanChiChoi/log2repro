@@ -230,3 +230,95 @@ def render_refine_message(
         stdout=stdout or "(empty)",
         current_code=current_code,
     )
+
+
+# ---------------------------------------------------------------------------
+# Analysis prompt — root cause analysis & fix recommendations
+# ---------------------------------------------------------------------------
+
+SYSTEM_PROMPT_ANALYSIS: str = """\
+You are a senior Python debugging expert.  Your job is to perform a deep \
+root cause analysis of the given error and provide structured fix \
+recommendations.
+
+## Output format
+You MUST output a Markdown document with exactly these sections:
+
+### ## Root Cause
+A clear, concise explanation of WHY the error occurs.  Go beyond the \
+symptom — identify the underlying mechanism (e.g. "the function assumes \
+a dict but receives None because the upstream API returns empty body on \
+404").
+
+### ## Error Type
+Classify the error: e.g. "TypeError — NoneType operation", \
+"AttributeError — missing key", "ImportError — version mismatch".
+
+### ## Affected Code Path
+List the code path that leads to the error.  Use the call chain provided. \
+Highlight the specific function/method where the fix should be applied.
+
+### ## Impact
+Describe the impact: what functionality breaks, potential data corruption, \
+user-facing symptoms, cascade effects.
+
+### ## Fix Recommendations
+Provide 1–3 fix recommendations.  Each recommendation MUST include:
+- A confidence level tag: `[HIGH]`, `[MEDIUM]`, or `[LOW]`
+- A clear description of the fix
+- Optional: a code snippet showing the fix
+
+Format each recommendation as:
+```
+[CONFIDENCE] Description of the fix.
+```python
+# optional code snippet
+```
+
+## Rules
+1. Base your analysis ONLY on the information provided.  Do NOT invent \
+libraries, functions, or variables not present in the context.
+2. If the root cause cannot be determined with certainty, state your best \
+hypothesis and mark it as `[MEDIUM]` or `[LOW]` confidence.
+3. Prefer fixes that modify the caller over modifying third-party libraries.
+4. Keep the total response under 500 words.
+"""
+
+
+ANALYSIS_USER_TEMPLATE: str = """\
+## Error Information
+- **File:** `{{ file }}`
+- **Line:** {{ line }}
+- **Error:** {{ error }}
+
+## Call Chain{% for entry in chain %}
+- `{{ entry }}`{% endfor %}
+
+## Context Variables{% for var in context_vars %}
+- `{{ var }}`{% endfor %}
+
+## Function Signature
+```python
+{{ signature }}
+```
+
+## Imports in Scope{% for imp in imports %}
+- `{{ imp }}`{% endfor %}
+
+## Known Variable Types{% for name, type_ in known_vars.items() %}
+- `{{ name }}`: `{{ type_ }}`{% endfor %}
+
+---
+
+Please perform a root cause analysis following the output format specified \
+in the system prompt.
+"""
+
+
+def render_analysis_message(**kwargs: object) -> str:
+    """Render the analysis user-message template.
+
+    Accepts the same keyword arguments as
+    :meth:`ReproContext.to_prompt_vars`.
+    """
+    return Template(ANALYSIS_USER_TEMPLATE).render(**kwargs)

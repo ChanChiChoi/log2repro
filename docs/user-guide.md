@@ -22,6 +22,7 @@ log2repro run <input> [OPTIONS]
 |------|---------|-------------|
 | `-m`, `--model` | `gpt-4o` | LLM model identifier |
 | `-n`, `--dry-run` | `false` | Parse only, skip LLM and sandbox |
+| `-a`, `--analyze` | `false` | Enable root cause analysis (outputs `analysis.md`) |
 | `-d`, `--output-dir` | `./repro_out` | Output directory |
 | `-o`, `--output` | - | Write JSON to file (legacy mode) |
 | `--sandbox-timeout` | `10` | Max seconds for sandbox execution |

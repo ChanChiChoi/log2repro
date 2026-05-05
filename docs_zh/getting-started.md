@@ -302,6 +302,18 @@ for name, content in files.items():
     print(f"已写入: {name}")
 ```
 
+### 根因分析（Python API）
+
+```python
+from log2repro import analyze
+
+result = analyze(Path("error.log").read_text(), model="gpt-4o")
+print(f"根因: {result.root_cause}")
+print(f"错误类型: {result.error_type}")
+for rec in result.recommendations:
+    print(f"  [{rec.confidence.upper()}] {rec.description}")
+```
+
 ### 批量处理多个日志
 
 ```bash

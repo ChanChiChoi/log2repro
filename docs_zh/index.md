@@ -16,7 +16,7 @@
 
 ## 开发
 
-- [架构](architecture.md) — 5 阶段流水线、模块图、设计决策、数据流
+- [架构](architecture.md) — 6 阶段流水线（含分析）、模块图、设计决策、数据流
 - [贡献指南](contributing.md) — 开发环境、测试规范、代码风格、PR 流程
-- [更新日志](changelog.md) — 版本历史（D1–D7）
+- [更新日志](changelog.md) — 版本历史（D1–D8）
 - [路线图](roadmap.md) — 里程碑、已完成与规划中的功能

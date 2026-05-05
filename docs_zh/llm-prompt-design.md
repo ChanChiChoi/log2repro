@@ -200,6 +200,57 @@ reproduce 脚本存在 {{ error_type }} 需要修复。
 | `TypeError` | 检查函数签名和参数类型 |
 | `FileNotFoundError` | 使用 mock_data.json 或创建临时文件 |
 
+## 分析提示
+
+启用 `--analyze` 时，使用独立的系统提示引导 LLM 进行根因分析：
+
+### SYSTEM_PROMPT_ANALYSIS
+
+**用于结构化错误分析**（原因 → 影响 → 修复方案）。
+
+LLM 需输出恰好 5 个节：
+1. **Root Cause** — 错误发生的根本原因（超越表象）
+2. **Error Type** — 分类（如 "TypeError — NoneType operation"）
+3. **Affected Code Path** — 应用修复的代码路径
+4. **Impact** — 功能影响、用户症状
+5. **Fix Recommendations** — 1-3 个修复建议，带 `[HIGH]`/`[MEDIUM]`/`[LOW]` 置信度标签
+
+每个建议可附带代码片段。输出的 `analysis.md` 中按置信度排序展示。
+
+### 分析用户模板
+
+使用与复现模板相同的 Jinja2 变量（`ANALYSIS_USER_TEMPLATE`），确保 LLM 拥有完整的分析上下文。
+
+### 分析输出格式
+
+```markdown
+## Root Cause
+
+函数收到 None 值，因为上游 API 在 404 时返回空 body。
+
+## Error Type
+
+TypeError — NoneType 属性访问
+
+## Affected Code Path
+
+`process_data()` 第 42 行
+
+## Impact
+
+整个请求以 500 错误失败。
+
+## Fix Recommendations
+
+[HIGH] 在访问 user_id 前添加 None 检查。
+```python
+if data.get("user_id") is None:
+    raise ValueError("user_id must not be None")
+```
+
+[MEDIUM] 使用默认值或提前抛出异常。
+```
+
 ## 反幻觉措施
 
 ### 1. AST 锚定
