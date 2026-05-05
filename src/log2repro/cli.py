@@ -30,6 +30,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from log2repro.extractors.ast_parser import ASTContext, extract_ast_context_from_source
+from log2repro.parsers.base import BaseParser
 from log2repro.parsers.stacktrace import StacktraceParser
 from log2repro.utils.io import read_input, write_output
 
@@ -47,6 +48,23 @@ def _setup_logging(verbose: bool) -> None:
     level = logging.DEBUG if verbose else logging.INFO
     fmt = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
     logging.basicConfig(level=level, format=fmt, stream=sys.stderr)
+
+
+def _detect_parser(text: str) -> BaseParser:
+    """Auto-detect input format and return the appropriate parser.
+
+    Priority: Sentry JSON > CI Log (ANSI) > Stacktrace (default).
+    """
+    from log2repro.parsers.ci_log import CILogParser
+    from log2repro.parsers.sentry import SentryParser
+
+    sentry = SentryParser()
+    if sentry.can_parse(text):
+        return sentry
+    ci = CILogParser()
+    if ci.can_parse(text):
+        return ci
+    return StacktraceParser()
 
 
 @app.command()
@@ -89,6 +107,11 @@ def run(
         "--max-refine",
         help="Maximum sandbox→LLM refinement rounds.",
     ),
+    extra_body: Optional[str] = typer.Option(
+        None,
+        "--extra-body",
+        help='Extra JSON body passed to the LLM API (e.g. \'{"enable_thinking": false}\').',
+    ),
     verbose: bool = typer.Option(
         False,
         "--verbose",
@@ -103,6 +126,18 @@ def run(
     """
     _setup_logging(verbose)
 
+    # Parse --extra-body JSON
+    parsed_extra_body: dict[str, object] | None = None
+    if extra_body:
+        try:
+            parsed_extra_body = json.loads(extra_body)
+            if not isinstance(parsed_extra_body, dict):
+                console.print("[red]Error:[/red] --extra-body must be a JSON object.")
+                raise typer.Exit(code=1)
+        except json.JSONDecodeError as exc:
+            console.print(f"[red]Error:[/red] --extra-body is not valid JSON: {exc}")
+            raise typer.Exit(code=1) from exc
+
     # 1. Read input
     try:
         raw_text = read_input(input_source)
@@ -114,10 +149,10 @@ def run(
         console.print("[red]Error:[/red] Empty input.")
         raise typer.Exit(code=1)
 
-    # 2. Parse traceback
-    parser = StacktraceParser()
+    # 2. Auto-detect format and parse
+    parser = _detect_parser(raw_text)
     if not parser.can_parse(raw_text):
-        console.print("[yellow]Warning:[/yellow] Input does not look like a Python traceback.")
+        console.print("[yellow]Warning:[/yellow] Input does not match any known format.")
 
     traces = parser.parse(raw_text)
     if not traces:
@@ -145,6 +180,7 @@ def run(
         output=output,
         sandbox_timeout=sandbox_timeout,
         max_refine=max_refine,
+        extra_body=parsed_extra_body,
     )
 
 
@@ -173,6 +209,7 @@ def _run_full_pipeline(
     output: str | None,
     sandbox_timeout: int,
     max_refine: int,
+    extra_body: dict[str, object] | None = None,
 ) -> None:
     """Execute the full generate → sandbox → auto-fix pipeline."""
     from log2repro.generators.code_gen import ReproContext, generate_repro_script
@@ -193,6 +230,7 @@ def _run_full_pipeline(
             ctx,
             sandbox_timeout=sandbox_timeout,
             max_refine_rounds=max_refine,
+            extra_body=extra_body,
         )
     except RuntimeError as exc:
         console.print(f"[red]Generation failed:[/red] {exc}")

@@ -7,6 +7,14 @@
 - Added comprehensive docs under `docs/` (9 files)
 - Generated `CODE_LOGIC.md` with full module-by-module logic documentation
 - Added `README.md` for GitHub
+- Added `--extra-body` CLI parameter for LLM API extra parameters
+- Thinking model support: `reasoning_content` fallback when `content` is None
+- Thinking content logging with `--verbose`
+- CLI auto-detection: Sentry JSON / CI Log / Stacktrace format routing
+- Extended ANSI escape sequence stripping (CSI, OSC, private mode)
+- Sentry parser: extract `context_vars` from frame `vars` dict
+- Added `error_reproduced_rate` evaluation metric
+- PyPI packaging with `pyproject.toml` and GitHub Actions workflows
 
 ### D6 — Benchmark Framework
 
@@ -81,10 +89,6 @@
 
 | Version | Date | Milestone | Tests |
 |---------|------|-----------|-------|
-| 0.1.0 | D1 | Core parsing + AST | ~80 |
-| 0.2.0 | D2 | LLM generation + feedback | ~150 |
-| 0.3.0 | D3 | Sandbox + auto-fix | ~300 |
-| 0.4.0 | D4 | Evaluation metrics | ~350 |
-| 0.5.0 | D5 | Advanced parsers | ~370 |
-| 0.6.0 | D6 | Benchmarks | ~385 |
-| 0.7.0 | D7 | Documentation | ~385 |
+| 0.1.0 | D1-D6 | Core parsing + AST + LLM + Sandbox + Eval + Parsers + Benchmarks | ~385 |
+| 0.2.0 | D7 | Documentation + PyPI packaging | ~385 |
+| 0.2.1 | D7 | --extra-body, thinking model support, CLI auto-detect | ~385 |

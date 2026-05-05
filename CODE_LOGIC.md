@@ -47,8 +47,10 @@
 
 ```
 cli.py
-├── parsers/stacktrace.py
-│   └── parsers/base.py (ParsedTrace, BaseParser)
+├── parsers/base.py (BaseParser)
+├── parsers/stacktrace.py (StacktraceParser)
+├── parsers/sentry.py (SentryParser) — via _detect_parser
+├── parsers/ci_log.py (CILogParser) — via _detect_parser
 ├── extractors/ast_parser.py (ASTContext, extract_ast_context)
 ├── generators/code_gen.py
 │   ├── generators/prompts.py (system prompts, Jinja2 templates)
@@ -200,6 +202,7 @@ ParsedTrace
 - `can_parse(text)`: 检查是否以 `{` 开头且包含 `"exception"` / `"stacktrace"` / `"culprit"` 键。
 - `parse(text)`: 解析 JSON，优先取 `exception.values`，fallback 到顶层 `stacktrace`。
 - `_parse_exception_value(exc_val)`: 从 Sentry frame 提取 `file`、`line`、`error`、`chain`、`context_vars`。
+  - `context_vars`: 先从 origin frame 的 `context_line` 提取变量名，再从所有 frame 的 `vars` 字典提取 key 名。
 
 ### 4.4 ci_log.py
 
@@ -207,6 +210,7 @@ ParsedTrace
 
 - `can_parse(text)`: 剥离 ANSI 转义码后委托给 `StacktraceParser.can_parse()`。
 - `parse(text)`: 先剥离 ANSI，尝试全文解析；失败则按 CI step 边界（`##[`、`Run `、`Step `、`ERROR`、`FAIL`）分段解析。
+- `_RE_ANSI`: 匹配 SGR（颜色）、CSI（光标/擦除）、OSC（窗口标题）、private mode。
 - `_split_ci_sections(text)`: 按边界正则分割。
 
 ---
@@ -298,22 +302,25 @@ Jinja2 模板，变量：`file`、`line`、`error`、`chain`、`context_vars`、
 - `EXPECTED_FILES = ("reproduce.py", "requirements.txt", "mock_data.json")`
 - `_CODE_BLOCK_RE`: 匹配 Markdown 围栏代码块
 
-**`_call_llm(model, messages, temperature, max_tokens)`：**
+**`_call_llm(model, messages, temperature, max_tokens, *, extra_body=None)`：**
 - 唯一与 `litellm` 交互的函数（隔离便于 mock）
 - 调用 `litellm.completion()`，返回响应文本
+- `extra_body`: 额外 JSON 参数透传给 LLM API（如 `{"enable_thinking": false}`）
+- 思考模型兼容：若 `content` 为 `None` 但 `reasoning_content` 存在，回退使用 `reasoning_content`
+- 若有 `reasoning_content`，自动通过 `logger.info("[Thinking] ...")` 记录思考内容
 
-**`_generate_initial(context, temperature, max_tokens)`：**
+**`_generate_initial(context, *, temperature, max_tokens, extra_body=None)`：**
 - 组装 system prompt + user message
 - 调用 `_call_llm()`，解析响应，验证文件完整性
 - 失败重试最多 `MAX_RETRIES` 次，指数退避
 
-**`generate_repro_script(context, temperature, max_tokens, sandbox_timeout, max_refine_rounds)`：**
+**`generate_repro_script(context, *, temperature, max_tokens, sandbox_timeout, max_refine_rounds, extra_body=None)`：**
 
 ```
 context
   │
   ▼
-_generate_initial(context)       # 首次 LLM 生成（含重试）
+_generate_initial(context, extra_body=...)  # 首次 LLM 生成（含重试）
   │
   ▼
 files: dict[str, str]            # {"reproduce.py": "...", ...}
@@ -327,9 +334,9 @@ for round in 1..max_refine_rounds:
   │
   ├── if error_reproduced → return files
   │
-  └── _refine_with_sandbox_feedback(context, current_files, sandbox_result)
+  └── _refine_with_sandbox_feedback(context, current_files, sandbox_result, extra_body=...)
         ├── render_refine_message(...)     # 构建修正提示
-        ├── _call_llm(...)                 # LLM 返回修正代码
+        ├── _call_llm(..., extra_body=...) # LLM 返回修正代码
         └── merge files                    # 更新 reproduce.py，保留其他文件
   │
   ▼
@@ -466,7 +473,7 @@ return FixResult(degraded=True, suggestions=_build_fix_suggestions(...))
 
 **`SingleEvalResult`**：单次评估结果（runnable、dep_conflict、mock_coverage、error_reproduced 等）。
 
-**`BatchEvalResult`**：批量评估结果，提供聚合属性和 `report()` 方法。
+**`BatchEvalResult`**：批量评估结果，提供聚合属性（`runnable_rate`、`dep_conflict_rate`、`mock_coverage`、`token_efficiency`、`error_reproduced_rate`）和 `report()` 方法。
 
 ### 4 个指标函数
 
@@ -503,6 +510,12 @@ return FixResult(degraded=True, suggestions=_build_fix_suggestions(...))
 
 **CLI 框架：** Typer + Rich
 
+**格式自动检测 `_detect_parser(text)`：**
+优先级：Sentry JSON > CI Log（ANSI）> Stacktrace（默认）。
+- `SentryParser.can_parse()` → 检查 `{` 开头 + `"exception"` / `"stacktrace"` 键
+- `CILogParser.can_parse()` → 剥离 ANSI 后检查 traceback
+- 默认 → `StacktraceParser`
+
 **命令 `log2repro run`：**
 
 | 参数 | 类型 | 说明 |
@@ -514,6 +527,7 @@ return FixResult(degraded=True, suggestions=_build_fix_suggestions(...))
 | `--output` / `-o` | Option | JSON 输出文件（legacy） |
 | `--sandbox-timeout` | Option | 沙箱超时（默认 10s） |
 | `--max-refine` | Option | 最大修正轮次（默认 2） |
+| `--extra-body` | Option | LLM API 额外 JSON 参数（如 `'{"enable_thinking": false}'`） |
 | `--verbose` / `-v` | Option | 详细日志 |
 
 **全链路流程 `run()`：**
@@ -524,18 +538,24 @@ input_source
   ├── read_input(input_source)           # utils/io.py
   │
   ▼
-StacktraceParser.parse(raw_text)         # 解析 traceback
+_detect_parser(raw_text)                # 自动检测格式
+  ├── SentryParser.can_parse() → SentryParser
+  ├── CILogParser.can_parse()  → CILogParser
+  └── default                → StacktraceParser
+  │
+  ▼
+parser.parse(raw_text)                  # 解析日志
   │
   ├── _try_extract_ast(file, line, chain) # AST 提取（best-effort）
   │
   ├── if dry_run → _print_dry_run()      # 输出 JSON 到控制台
   │
   ▼
-_run_full_pipeline(...)
+_run_full_pipeline(..., extra_body=...)
   │
   ├── ReproContext(trace, ast_context, model)
   │
-  ├── generate_repro_script(ctx)          # generators/code_gen.py
+  ├── generate_repro_script(ctx, extra_body=...)  # generators/code_gen.py
   │     └── 首次生成 + 沙箱验证 + 修正循环
   │
   ├── auto_fix_loop(...)                  # validators/auto_fix.py
@@ -656,7 +676,9 @@ ParsedTrace(
 [generate_repro_script]
   ├── select_system_prompt("ConnectionError") → SYSTEM_PROMPT_NETWORK
   ├── render_user_message(...) → 用户消息
-  ├── _call_llm(model, messages) → LLM 响应
+  ├── _call_llm(model, messages, extra_body=...) → LLM 响应
+  │     ├── 若 content=None 且 reasoning_content 存在 → 回退使用 reasoning_content
+  │     └── 若有 thinking 内容 → logger.info("[Thinking] ...")
   ├── parse_llm_response(raw_text) → {"reproduce.py": "...", "requirements.txt": "...", "mock_data.json": "..."}
   ├── _validate_files(files) → 通过
   │

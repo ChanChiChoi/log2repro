@@ -58,38 +58,26 @@ def select_system_prompt(error: str) -> str:
 
 ```jinja2
 ## 错误信息
-- **文件:** {{ file }}
+- **文件:** `{{ file }}`
 - **行号:** {{ line }}
 - **错误:** {{ error }}
 
-## 调用链
-{% for entry in chain %}- {{ entry }}
-{% endfor %}
+## 调用链{% for entry in chain %}
+- `{{ entry }}`{% endfor %}
 
-## 上下文变量
-{% for var in context_vars %}- {{ var }}
-{% endfor %}
+## 上下文变量{% for var in context_vars %}
+- `{{ var }}`{% endfor %}
 
-{% if signature %}
 ## 函数签名
 ```python
 {{ signature }}
 ```
-{% endif %}
 
-{% if imports %}
-## 源文件中的 Import
-```python
-{% for imp in imports %}{{ imp }}
-{% endfor %}`
-```
-{% endif %}
+## 作用域中的 Import{% for imp in imports %}
+- `{{ imp }}`{% endfor %}
 
-{% if known_vars %}
-## 已知变量
-{% for name, type_ann in known_vars.items() %}- `{{ name }}`: {{ type_ann }}
-{% endfor %}
-{% endif %}
+## 已知变量类型{% for name, type_ in known_vars.items() %}
+- `{{ name }}`: `{{ type_ }}`{% endfor %}
 ```
 
 ### 模板变量

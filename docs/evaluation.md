@@ -86,6 +86,18 @@ token_efficiency = errors_reproduced / (tokens_used / 1000)
 
 **Interpretation:** Higher is better. A value of 1.0 means 1 error reproduced per 1,000 tokens.
 
+### 5. Error Reproduced Rate (错误复现率) ↑
+
+**Question:** Does the sandbox reproduce the original error?
+
+**Method:** Calculated from `error_reproduced` flag across all scripts.
+
+```
+error_reproduced_rate = scripts_with_error_reproduced / total_scripts
+```
+
+**Interpretation:** The primary effectiveness metric. 1.0 means every generated script triggers the original error.
+
 ## Using the Evaluation API
 
 ### Single Evaluation

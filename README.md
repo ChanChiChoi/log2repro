@@ -139,6 +139,7 @@ Options:
   -o, --output         Write JSON to file (legacy mode)
   --sandbox-timeout    Max seconds for sandbox execution (default: 10)
   --max-refine         Max sandbox→LLM refinement rounds (default: 2)
+  --extra-body TEXT    Extra JSON body for LLM API (e.g. '{"enable_thinking": false}')
   -v, --verbose        Enable verbose logging
 ```
 

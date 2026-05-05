@@ -58,38 +58,26 @@ A Jinja2 template injects structured context into the user message:
 
 ```jinja2
 ## Error Information
-- **File:** {{ file }}
+- **File:** `{{ file }}`
 - **Line:** {{ line }}
 - **Error:** {{ error }}
 
-## Call Chain
-{% for entry in chain %}- {{ entry }}
-{% endfor %}
+## Call Chain{% for entry in chain %}
+- `{{ entry }}`{% endfor %}
 
-## Context Variables
-{% for var in context_vars %}- {{ var }}
-{% endfor %}
+## Context Variables{% for var in context_vars %}
+- `{{ var }}`{% endfor %}
 
-{% if signature %}
 ## Function Signature
 ```python
 {{ signature }}
 ```
-{% endif %}
 
-{% if imports %}
-## Imports in Source File
-```python
-{% for imp in imports %}{{ imp }}
-{% endfor %}`
-```
-{% endif %}
+## Imports in Scope{% for imp in imports %}
+- `{{ imp }}`{% endfor %}
 
-{% if known_vars %}
-## Known Variables
-{% for name, type_ann in known_vars.items() %}- `{{ name }}`: {{ type_ann }}
-{% endfor %}
-{% endif %}
+## Known Variable Types{% for name, type_ in known_vars.items() %}
+- `{{ name }}`: `{{ type_ }}`{% endfor %}
 ```
 
 ### Template Variables

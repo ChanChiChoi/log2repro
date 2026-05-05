@@ -26,6 +26,7 @@ log2repro run <input> [OPTIONS]
 | `-o`, `--output` | - | 将 JSON 写入文件（旧模式） |
 | `--sandbox-timeout` | `10` | 沙箱执行最大秒数 |
 | `--max-refine` | `2` | 沙箱→LLM 最大修正轮次 |
+| `--extra-body` | - | 传给 LLM API 的额外 JSON 参数（如 `{"enable_thinking": false}`） |
 | `-v`, `--verbose` | `false` | 启用详细日志 |
 
 ### `log2repro version`
@@ -136,6 +137,28 @@ log2repro run error.log --model azure/gpt-4o
 ```
 
 设置对应提供商的 API 密钥环境变量即可。
+
+## 思考模型
+
+部分模型（如 Qwen3、DeepSeek-R1）具有"思考"或"推理"模式，会将思维链返回到单独的字段中。log2repro 会自动处理这种情况：
+
+- 如果模型在 `content` 中返回答案，直接使用。
+- 如果 `content` 为 `None` 但 `reasoning_content` 存在，log2repro 会回退使用 `reasoning_content`。
+- 使用 `--verbose` 时，思考内容会自动打印。
+
+建议关闭思考模式以获得直接的代码生成结果：
+
+```bash
+# Qwen3：关闭思考
+log2repro run error.log --model hosted_vllm/Qwen3.5-27B \
+  --extra-body '{"enable_thinking": false}'
+
+# DeepSeek-R1：关闭思考
+log2repro run error.log --model deepseek/deepseek-reasoner \
+  --extra-body '{"enable_thinking": false}'
+```
+
+`--extra-body` 参数接受任意 JSON 对象，直接传递给 LLM API 请求体。适用于 litellm 标准选项未覆盖的提供商特定参数。
 
 ## 沙箱调参
 

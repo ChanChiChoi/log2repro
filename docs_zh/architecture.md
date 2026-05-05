@@ -64,6 +64,10 @@ AST 提取提供**硬约束**（真实变量名、实际 import、函数签名�
 
 不使用 OS 级防火墙或 Docker，而是通过环境变量（`NO_PROXY=*`、清空代理变量）实现网络隔离。这种方式可移植、可测试，且足以防止 `requests`/`httpx`/`urllib` 意外发起真实 API 调用。
 
+### 7. 思考模型兼容
+
+部分 LLM（如 Qwen3、DeepSeek-R1）会返回 `content=None`，推理内容在 `reasoning_content` 字段中。`_call_llm()` 透明处理：若 `content` 为 None 但 `reasoning_content` 存在，回退使用 `reasoning_content`。`--extra-body` CLI 参数允许传入 `{"enable_thinking": false}` 关闭思考模式，获得直接的代码生成结果。
+
 ## 数据流
 
 ### 阶段 1：解析
@@ -97,10 +101,11 @@ AST 提取提供**硬约束**（真实变量名、实际 import、函数签名�
 
 1. `select_system_prompt()` 选择合适的系统提示（通用/网络/数据库）
 2. `render_user_message()` 用 Jinja2 渲染用户消息模板
-3. `_call_llm()` 调用 LLM
-4. `parse_llm_response()` 提取围栏代码块
-5. `_validate_files()` 检查 3 个必需文件是否齐全
-6. 失败时：最多重试 2 次，指数退避
+3. `_call_llm()` 调用 LLM（可通过 `extra_body` 传入提供商特定参数）
+4. 若模型返回 `content=None` 且 `reasoning_content` 存在（思考模型），回退使用 `reasoning_content`
+5. `parse_llm_response()` 提取围栏代码块
+6. `_validate_files()` 检查 3 个必需文件是否齐全
+7. 失败时：最多重试 2 次，指数退避
 
 ### 阶段 4：沙箱 + 修复
 

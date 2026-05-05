@@ -26,6 +26,7 @@ log2repro run <input> [OPTIONS]
 | `-o`, `--output` | - | Write JSON to file (legacy mode) |
 | `--sandbox-timeout` | `10` | Max seconds for sandbox execution |
 | `--max-refine` | `2` | Max sandbox→LLM refinement rounds |
+| `--extra-body` | - | Extra JSON body for the LLM API (e.g. `{"enable_thinking": false}`) |
 | `-v`, `--verbose` | `false` | Enable verbose logging |
 
 ### `log2repro version`
@@ -136,6 +137,28 @@ log2repro run error.log --model azure/gpt-4o
 ```
 
 Set the appropriate API key environment variable for your provider.
+
+## Thinking Models
+
+Some models (e.g. Qwen3, DeepSeek-R1) have a "thinking" or "reasoning" mode that returns chain-of-thought in a separate field. log2repro handles this automatically:
+
+- If the model returns the answer in `content`, it is used directly.
+- If `content` is `None` but `reasoning_content` exists, log2repro falls back to `reasoning_content`.
+- Thinking content is always logged when `--verbose` is enabled.
+
+To disable thinking mode and get a direct answer (recommended for code generation):
+
+```bash
+# Qwen3: disable thinking
+log2repro run error.log --model hosted_vllm/Qwen3.5-27B \
+  --extra-body '{"enable_thinking": false}'
+
+# DeepSeek-R1: disable thinking
+log2repro run error.log --model deepseek/deepseek-reasoner \
+  --extra-body '{"enable_thinking": false}'
+```
+
+The `--extra-body` parameter accepts any JSON object and passes it directly to the LLM API request body. This is useful for provider-specific parameters not covered by litellm's standard options.
 
 ## Sandbox Tuning
 

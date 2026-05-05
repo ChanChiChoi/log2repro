@@ -101,6 +101,8 @@ def _call_llm(
     messages: list[dict[str, str]],
     temperature: float,
     max_tokens: int,
+    *,
+    extra_body: dict[str, object] | None = None,
 ) -> str:
     """Call the LLM and return the raw response text.
 
@@ -113,19 +115,48 @@ def _call_llm(
         messages: Chat messages (system + user).
         temperature: Sampling temperature.
         max_tokens: Maximum response tokens.
+        extra_body: Additional parameters passed to the LLM API request body
+            (e.g. ``{"enable_thinking": False}`` for Qwen3).
 
     Returns:
         The raw text content of the LLM response.
     """
     import litellm
 
-    response = litellm.completion(
-        model=model,
-        messages=messages,
-        temperature=temperature,
-        max_tokens=max_tokens,
-    )
-    return response.choices[0].message.content  # type: ignore[union-attr]
+    kwargs: dict[str, object] = {
+        "model": model,
+        "messages": messages,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+    }
+    if extra_body:
+        kwargs["extra_body"] = extra_body
+
+    response = litellm.completion(**kwargs)
+    choice = response.choices[0]
+    content = choice.message.content
+
+    # Handle "thinking" models (e.g. Qwen3 with enable_thinking=True).
+    # These may return the reasoning in a separate field.
+    reasoning = getattr(choice.message, "reasoning_content", None)
+    if reasoning:
+        # Always log thinking content so it appears with --verbose
+        logger.info("[Thinking] %s", reasoning[:500] + ("..." if len(reasoning) > 500 else ""))
+
+    if content is None:
+        if reasoning:
+            logger.warning(
+                "LLM returned content=None but reasoning_content is present. "
+                "Using reasoning_content as fallback. "
+                "Consider adding --extra-body '{\"enable_thinking\": false}'."
+            )
+            return reasoning
+        raise RuntimeError(
+            "LLM returned empty content. If using a thinking model "
+            "(e.g. Qwen3 with enable_thinking), try passing "
+            "--extra-body '{\"enable_thinking\": false}'."
+        )
+    return content
 
 
 # ---------------------------------------------------------------------------
@@ -138,6 +169,7 @@ def _generate_initial(
     *,
     temperature: float,
     max_tokens: int,
+    extra_body: dict[str, object] | None = None,
 ) -> dict[str, str]:
     """Call the LLM to produce the first draft of reproduction files.
 
@@ -165,6 +197,7 @@ def _generate_initial(
                 messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
+                extra_body=extra_body,
             )
             files = parse_llm_response(raw_text)
             _validate_files(files)
@@ -224,6 +257,7 @@ def _refine_with_sandbox_feedback(
     sandbox_result: SandboxResult,
     temperature: float,
     max_tokens: int,
+    extra_body: dict[str, object] | None = None,
 ) -> dict[str, str]:
     """Ask the LLM to fix ``reproduce.py`` based on sandbox output.
 
@@ -257,6 +291,7 @@ def _refine_with_sandbox_feedback(
         messages=messages,
         temperature=temperature,
         max_tokens=max_tokens,
+        extra_body=extra_body,
     )
 
     # Parse the LLM response — may only return the updated reproduce.py
@@ -283,6 +318,7 @@ def generate_repro_script(
     max_tokens: int = DEFAULT_MAX_TOKENS,
     sandbox_timeout: int = DEFAULT_SANDBOX_TIMEOUT,
     max_refine_rounds: int = DEFAULT_MAX_REFINE_ROUNDS,
+    extra_body: dict[str, object] | None = None,
 ) -> dict[str, str]:
     """Generate a reproduction script from a :class:`ReproContext`.
 
@@ -302,6 +338,8 @@ def generate_repro_script(
         max_tokens: Maximum tokens in the LLM response.
         sandbox_timeout: Seconds before sandbox kills the script.
         max_refine_rounds: Max sandbox→LLM feedback loops (0 to skip).
+        extra_body: Additional parameters passed to the LLM API request body
+            (e.g. ``{"enable_thinking": False}`` for Qwen3).
 
     Returns:
         A dict mapping filenames to their contents, e.g.::
@@ -316,7 +354,9 @@ def generate_repro_script(
         RuntimeError: If the LLM fails after all retries.
     """
     # --- Step 1: initial LLM generation with retry ---
-    files = _generate_initial(context, temperature=temperature, max_tokens=max_tokens)
+    files = _generate_initial(
+        context, temperature=temperature, max_tokens=max_tokens, extra_body=extra_body,
+    )
 
     # --- Step 2: sandbox verification + refinement loop ---
     if max_refine_rounds <= 0:
@@ -343,6 +383,7 @@ def generate_repro_script(
             sandbox_result=result,
             temperature=temperature,
             max_tokens=max_tokens,
+            extra_body=extra_body,
         )
 
     logger.info("Refinement exhausted after %d rounds, returning last result", max_refine_rounds)

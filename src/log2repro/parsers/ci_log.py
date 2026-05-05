@@ -17,8 +17,13 @@ import re
 from log2repro.parsers.base import BaseParser, ParsedTrace
 from log2repro.parsers.stacktrace import StacktraceParser
 
-# Matches ANSI escape sequences
-_RE_ANSI: re.Pattern[str] = re.compile(r"\x1b\[[0-9;]*m")
+# Matches ANSI escape sequences (SGR, cursor, erase, OSC, private mode)
+_RE_ANSI: re.Pattern[str] = re.compile(
+    r"\x1b\[[0-9;]*[A-Za-z]"      # CSI: SGR colors, cursor movement, erase
+    r"|\x1b\][^\x07\x1b]*\x07"    # OSC: window title, etc.
+    r"|\x1b\[\?[0-9;]*[A-Za-z]"   # private mode (e.g. mouse tracking)
+    r"|\x1b\([A-B0-2]"            # character set selection
+)
 
 
 class CILogParser(BaseParser):

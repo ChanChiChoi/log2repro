@@ -68,7 +68,17 @@
 
 ---
 
-### D8 — Language Expansion (Planned)
+### D8 — Root Cause Analysis & Fix Recommendations (Planned)
+
+- [ ] `--analyze` CLI flag to enable root cause analysis mode
+- [ ] LLM prompt for error cause analysis (structured output: cause → impact → fix)
+- [ ] `analysis.md` output with root cause, affected code path, and fix recommendations
+- [ ] Fix suggestions ranked by confidence (high/medium/low)
+- [ ] Integration with reproduction: analysis + repro in one pipeline
+- [ ] Python API `analyze(traceback)` for programmatic use
+- [ ] Unit tests for analysis output structure and content quality
+
+### D9 — Language Expansion (Planned)
 
 - [ ] JavaScript/Typetrace parser
 - [ ] Java stack trace parser
@@ -76,7 +86,7 @@
 - [ ] Rust panic parser
 - [ ] Language-specific system prompts
 
-### D9 — Web UI (Planned)
+### D10 — Web UI (Planned)
 
 - [ ] FastAPI backend
 - [ ] React frontend
@@ -84,14 +94,14 @@
 - [ ] History / saved reproductions
 - [ ] Shareable repro links
 
-### D10 — CI/CD Integration (Planned)
+### D11 — CI/CD Integration (Planned)
 
 - [ ] GitHub Action
 - [ ] GitLab CI template
 - [ ] Auto-comment on issues with repro script
 - [ ] Sentry plugin / webhook
 
-### D11 — Advanced Features (Planned)
+### D12 — Advanced Features (Planned)
 
 - [ ] Multi-file reproduction (not just single script)
 - [ ] Docker-based sandbox (stronger isolation)

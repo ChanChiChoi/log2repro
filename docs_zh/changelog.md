@@ -7,6 +7,14 @@
 - 在 `docs/` 下添加完整文档（9 个文件）
 - 生成 `CODE_LOGIC.md`，逐模块记录代码逻辑
 - 添加 GitHub `README.md`
+- 添加 `--extra-body` CLI 参数，支持 LLM API 额外参数
+- 思考模型支持：`content` 为 None 时回退使用 `reasoning_content`
+- 思考内容随 `--verbose` 自动打印
+- CLI 自动检测：Sentry JSON / CI 日志 / Stacktrace 格式路由
+- 扩展 ANSI 转义码剥离（CSI、OSC、private mode）
+- Sentry 解析器：从 frame `vars` 字典提取 `context_vars`
+- 新增 `error_reproduced_rate` 评估指标
+- PyPI 打包 + GitHub Actions 工作流
 
 ### D6 — 基准测试框架
 
@@ -81,10 +89,6 @@
 
 | 版本 | 里程碑 | 测试数 |
 |------|--------|--------|
-| 0.1.0 | D1 核心解析 + AST | ~80 |
-| 0.2.0 | D2 LLM 生成 + 反馈 | ~150 |
-| 0.3.0 | D3 沙箱 + 自动修复 | ~300 |
-| 0.4.0 | D4 质量评估 | ~350 |
-| 0.5.0 | D5 高级解析器 | ~370 |
-| 0.6.0 | D6 基准测试 | ~385 |
-| 0.7.0 | D7 文档 | ~385 |
+| 0.1.0 | D1-D6 核心解析+AST+LLM+沙箱+评估+解析器+基准测试 | ~385 |
+| 0.2.0 | D7 文档 + PyPI 打包 | ~385 |
+| 0.2.1 | D7 --extra-body、思考模型支持、CLI 自动检测 | ~385 |

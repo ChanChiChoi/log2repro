@@ -139,6 +139,7 @@ log2repro run <input> [OPTIONS]
   -o, --output         将 JSON 写入文件（旧模式）
   --sandbox-timeout    沙箱执行最大秒数（默认: 10）
   --max-refine         沙箱→LLM 最大修正轮次（默认: 2）
+  --extra-body TEXT    传给 LLM API 的额外 JSON 参数（如 '{"enable_thinking": false}'）
   -v, --verbose        启用详细日志
 ```
 

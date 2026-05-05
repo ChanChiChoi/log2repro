@@ -64,6 +64,10 @@ If the auto-fix loop fails after 3 rounds, the system outputs human-readable rep
 
 Rather than OS-level firewall or Docker, network isolation uses environment variables (`NO_PROXY=*`, empty proxy vars). This is portable, testable, and sufficient for preventing accidental real API calls from `requests`/`httpx`/`urllib`.
 
+### 7. Thinking model compatibility
+
+Some LLMs (Qwen3, DeepSeek-R1) return `content=None` with reasoning in `reasoning_content`. The `_call_llm()` function handles this transparently: if `content` is None but `reasoning_content` exists, it falls back to `reasoning_content`. The `--extra-body` CLI parameter allows passing `{"enable_thinking": false}` to disable thinking mode for direct code generation.
+
 ## Data Flow
 
 ### Stage 1: Parse
@@ -97,10 +101,11 @@ Rather than OS-level firewall or Docker, network isolation uses environment vari
 
 1. `select_system_prompt()` picks the right system prompt (general/network/database)
 2. `render_user_message()` renders Jinja2 template with all context
-3. `_call_llm()` calls the LLM
-4. `parse_llm_response()` extracts fenced code blocks
-5. `_validate_files()` checks all 3 required files are present
-6. On failure: retry up to 2 times with exponential backoff
+3. `_call_llm()` calls the LLM (with optional `extra_body` for provider-specific params)
+4. If the model returns `content=None` with `reasoning_content` (thinking models), falls back to `reasoning_content`
+5. `parse_llm_response()` extracts fenced code blocks
+6. `_validate_files()` checks all 3 required files are present
+7. On failure: retry up to 2 times with exponential backoff
 
 ### Stage 4: Sandbox + Fix
 

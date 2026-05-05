@@ -104,6 +104,12 @@ class SentryParser(BaseParser):
                 if len(name) > 1 and name not in {"if", "in", "is", "or", "and", "not", "for", "def", "class", "return", "None", "True", "False"}:
                     context_vars.append(name)
 
+        # Also extract variable names from Sentry frame vars dict
+        for frame in frames:
+            frame_vars = frame.get("vars", {})
+            if isinstance(frame_vars, dict):
+                context_vars.extend(frame_vars.keys())
+
         return ParsedTrace(
             file=source_file,
             line=line_no,
