@@ -187,6 +187,201 @@ log2repro run error.log --sandbox-timeout 20
 log2repro run error.log --max-refine 3
 ```
 
+## 高阶用法
+
+### CI/CD 集成（GitHub Actions）
+
+在 CI 中测试失败时自动生成复现脚本：
+
+```yaml
+# .github/workflows/repro-on-failure.yml
+name: 失败时生成复现脚本
+on:
+  workflow_run:
+    workflows: ["Tests"]
+    types: [completed]
+
+jobs:
+  generate-repro:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync
+
+      - name: 下载失败日志
+        uses: actions/download-artifact@v4
+        with:
+          name: test-logs
+          path: ./logs
+
+      - name: 生成复现脚本
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          for log in ./logs/*.txt; do
+            echo "处理 $log..."
+            uv run log2repro run "$log" \
+              --output-dir "./repro_out/$(basename "$log" .txt)" \
+              --model gpt-4o-mini \
+              --sandbox-timeout 30 || true
+          done
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reproduction-scripts
+          path: repro_out/
+```
+
+### 处理 Docker / journalctl 日志
+
+从容器运行时或系统日志管道输入：
+
+```bash
+# 从 Docker 容器
+docker logs my-app 2>&1 | tail -50 | log2repro run - --output-dir ./repro_out
+
+# 从 docker-compose
+docker-compose logs my-app 2>&1 | log2repro run - --output-dir ./repro_out
+
+# 从 journalctl
+journalctl -u my-service --since "1 hour ago" --no-pager | log2repro run - --output-dir ./repro_out
+
+# 从 Kubernetes Pod
+kubectl logs my-pod --tail=100 | log2repro run - --output-dir ./repro_out
+```
+
+### Sentry JSON 数据
+
+直接处理 Sentry 事件：
+
+```bash
+# 从 Sentry API 导出
+curl -s "https://sentry.io/api/0/issues/$ISSUE_ID/events/latest/" \
+  -H "Authorization: Bearer $SENTRY_TOKEN" | \
+  log2repro run - --output-dir ./repro_out
+
+# 从已保存的 JSON 文件
+log2repro run sentry_event.json --output-dir ./repro_out
+```
+
+### Python API（编程方式使用）
+
+将 log2repro 作为库使用：
+
+```python
+from pathlib import Path
+from log2repro.parsers.stacktrace import StacktraceParser
+from log2repro.generators.code_gen import ReproContext, generate_repro_script
+from log2repro.extractors.ast_parser import extract_ast_context_from_source
+
+# 解析
+parser = StacktraceParser()
+traces = parser.parse(Path("error.log").read_text())
+trace = traces[0]
+
+# 提取 AST 上下文（可选，提升生成质量）
+ast_ctx = extract_ast_context_from_source(
+    source=Path(trace.file).read_text(),
+    filename=trace.file,
+    target_line=trace.line,
+    target_func=trace.chain[-1].split(":")[1] if trace.chain else "",
+)
+
+# 生成
+ctx = ReproContext(trace=trace, ast_context=ast_ctx, model="gpt-4o")
+files = generate_repro_script(ctx, sandbox_timeout=15, max_refine_rounds=3)
+
+# 写入输出
+out = Path("./repro_out")
+out.mkdir(exist_ok=True)
+for name, content in files.items():
+    (out / name).write_text(content)
+    print(f"已写入: {name}")
+```
+
+### 批量处理多个日志
+
+```bash
+# 处理目录下所有 .log 文件
+for f in ./crash_logs/*.log; do
+  name=$(basename "$f" .log)
+  echo "=== 处理: $name ==="
+  log2repro run "$f" \
+    --output-dir "./repro_out/$name" \
+    --model gpt-4o-mini \
+    --max-refine 1 \
+    --sandbox-timeout 20 || echo "失败: $name"
+done
+```
+
+### 模型对比
+
+用不同模型生成同一个错误的复现脚本，对比质量：
+
+```bash
+# 对比 GPT-4o vs Claude vs 本地模型
+for model in gpt-4o claude-3-sonnet ollama/llama3; do
+  echo "=== 模型: $model ==="
+  log2repro run error.log \
+    --output-dir "./repro_out/$model" \
+    --model "$model" \
+    --max-refine 2
+done
+```
+
+### 评估与基准测试
+
+以编程方式评估生成的脚本：
+
+```python
+from log2repro.eval_metrics import evaluate_batch, GenerationInput
+from pathlib import Path
+
+inputs = []
+for trace_dir in Path("./repro_out").iterdir():
+    if trace_dir.is_dir():
+        files = {f.name: f.read_text() for f in trace_dir.iterdir() if f.is_file()}
+        inputs.append(GenerationInput(
+            trace_name=trace_dir.name,
+            files=files,
+            tokens_used=3000,  # 从你的 LLM 提供商获取
+            expected_error="ValueError: ...",  # 来自原始 trace
+        ))
+
+batch = evaluate_batch(inputs, sandbox_timeout=15)
+print(batch.report())
+```
+
+### 详细模式（调试用）
+
+当出现问题时，使用详细模式查看完整流水线：
+
+```bash
+log2repro run error.log --verbose --output-dir ./repro_out
+```
+
+输出包括：
+- 解析的 trace 详情
+- LLM 调用尝试和重试
+- 沙箱执行输出
+- 自动修复分类和轮次
+
+### Dry-run：检查发送给 LLM 的内容
+
+在消耗 token 之前，先检查 log2repro 提取了哪些上下文：
+
+```bash
+log2repro run error.log --dry-run
+```
+
+输出为 JSON，精确展示将发送给 LLM 的内容：
+- 解析的 trace（文件、行号、错误、调用链、变量）
+- AST 上下文（签名、import、变量）
+- 选择的模型
+
 ## 常见问题
 
 **Q: 生成的脚本没有复现错误？**

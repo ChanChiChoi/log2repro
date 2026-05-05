@@ -187,6 +187,201 @@ log2repro run error.log --sandbox-timeout 20
 log2repro run error.log --max-refine 3
 ```
 
+## Advanced Examples
+
+### CI/CD Integration (GitHub Actions)
+
+Automatically generate reproduction scripts when tests fail in CI:
+
+```yaml
+# .github/workflows/repro-on-failure.yml
+name: Generate Repro on Failure
+on:
+  workflow_run:
+    workflows: ["Tests"]
+    types: [completed]
+
+jobs:
+  generate-repro:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync
+
+      - name: Download failed logs
+        uses: actions/download-artifact@v4
+        with:
+          name: test-logs
+          path: ./logs
+
+      - name: Generate reproduction
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          for log in ./logs/*.txt; do
+            echo "Processing $log..."
+            uv run log2repro run "$log" \
+              --output-dir "./repro_out/$(basename "$log" .txt)" \
+              --model gpt-4o-mini \
+              --sandbox-timeout 30 || true
+          done
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reproduction-scripts
+          path: repro_out/
+```
+
+### Process Docker / journalctl Logs
+
+Pipe logs from container runtimes or system journals:
+
+```bash
+# From Docker container
+docker logs my-app 2>&1 | tail -50 | log2repro run - --output-dir ./repro_out
+
+# From docker-compose
+docker-compose logs my-app 2>&1 | log2repro run - --output-dir ./repro_out
+
+# From journalctl
+journalctl -u my-service --since "1 hour ago" --no-pager | log2repro run - --output-dir ./repro_out
+
+# From Kubernetes pod
+kubectl logs my-pod --tail=100 | log2repro run - --output-dir ./repro_out
+```
+
+### Sentry JSON Payload
+
+Process a Sentry event directly:
+
+```bash
+# Export from Sentry API
+curl -s "https://sentry.io/api/0/issues/$ISSUE_ID/events/latest/" \
+  -H "Authorization: Bearer $SENTRY_TOKEN" | \
+  log2repro run - --output-dir ./repro_out
+
+# From a saved JSON file
+log2repro run sentry_event.json --output-dir ./repro_out
+```
+
+### Python API (Programmatic Usage)
+
+Use log2repro as a library:
+
+```python
+from pathlib import Path
+from log2repro.parsers.stacktrace import StacktraceParser
+from log2repro.generators.code_gen import ReproContext, generate_repro_script
+from log2repro.extractors.ast_parser import extract_ast_context_from_source
+
+# Parse
+parser = StacktraceParser()
+traces = parser.parse(Path("error.log").read_text())
+trace = traces[0]
+
+# Extract AST context (optional, improves quality)
+ast_ctx = extract_ast_context_from_source(
+    source=Path(trace.file).read_text(),
+    filename=trace.file,
+    target_line=trace.line,
+    target_func=trace.chain[-1].split(":")[1] if trace.chain else "",
+)
+
+# Generate
+ctx = ReproContext(trace=trace, ast_context=ast_ctx, model="gpt-4o")
+files = generate_repro_script(ctx, sandbox_timeout=15, max_refine_rounds=3)
+
+# Write output
+out = Path("./repro_out")
+out.mkdir(exist_ok=True)
+for name, content in files.items():
+    (out / name).write_text(content)
+    print(f"Written: {name}")
+```
+
+### Batch Processing Multiple Logs
+
+```bash
+# Process all .log files in a directory
+for f in ./crash_logs/*.log; do
+  name=$(basename "$f" .log)
+  echo "=== Processing: $name ==="
+  log2repro run "$f" \
+    --output-dir "./repro_out/$name" \
+    --model gpt-4o-mini \
+    --max-refine 1 \
+    --sandbox-timeout 20 || echo "Failed: $name"
+done
+```
+
+### Model Comparison
+
+Generate the same error with different models and compare quality:
+
+```bash
+# Compare GPT-4o vs Claude vs local model
+for model in gpt-4o claude-3-sonnet ollama/llama3; do
+  echo "=== Model: $model ==="
+  log2repro run error.log \
+    --output-dir "./repro_out/$model" \
+    --model "$model" \
+    --max-refine 2
+done
+```
+
+### Evaluation and Benchmarking
+
+Evaluate generated scripts programmatically:
+
+```python
+from log2repro.eval_metrics import evaluate_batch, GenerationInput
+from pathlib import Path
+
+inputs = []
+for trace_dir in Path("./repro_out").iterdir():
+    if trace_dir.is_dir():
+        files = {f.name: f.read_text() for f in trace_dir.iterdir() if f.is_file()}
+        inputs.append(GenerationInput(
+            trace_name=trace_dir.name,
+            files=files,
+            tokens_used=3000,  # track from your LLM provider
+            expected_error="ValueError: ...",  # from original trace
+        ))
+
+batch = evaluate_batch(inputs, sandbox_timeout=15)
+print(batch.report())
+```
+
+### Verbose Mode for Debugging
+
+When things go wrong, use verbose mode to see the full pipeline:
+
+```bash
+log2repro run error.log --verbose --output-dir ./repro_out
+```
+
+This shows:
+- Parsed trace details
+- LLM call attempts and retries
+- Sandbox execution output
+- Auto-fix classification and rounds
+
+### Dry-run: Inspect What Gets Sent to the LLM
+
+Before spending tokens, check what context log2repro extracts:
+
+```bash
+log2repro run error.log --dry-run
+```
+
+Output is JSON showing exactly what would be sent to the LLM:
+- Parsed trace (file, line, error, chain, variables)
+- AST context (signature, imports, variables)
+- Selected model
+
 ## FAQ
 
 **Q: The generated script doesn't reproduce the error?**
