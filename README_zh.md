@@ -1,16 +1,30 @@
 # log2repro
 
-**错误日志 → 可运行的复现代码生成器。**
+<p align="center">
+  <strong>错误日志 → 可运行的复现代码生成器</strong>
+</p>
 
-> **[English](README.md)** | **[中文文档](docs_zh/index.md)**
+<p align="center">
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/Python-3.10+-blue.svg" alt="Python 3.10+"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT License"></a>
+  <a href="https://github.com/ChanChiChoi/log2repro/actions"><img src="https://img.shields.io/badge/tests-385-brightgreen.svg" alt="Tests"></a>
+</p>
+
+<p align="center">
+  <a href="README.md">English</a> · <a href="docs_zh/index.md">中文文档</a>
+</p>
+
+---
 
 粘贴一段 Python traceback，即可获得一个独立的 `reproduce.py`，能触发原始错误——附带 `requirements.txt`、mock 数据和验证说明。
 
 > 平均复现时间：**45 分钟 → 3 分钟**。
 
-## 为什么需要？
+## 为什么需要 log2repro？
 
-工程师 60% 以上的调试时间花在"猜参数、翻数据库、mock 第三方 API"上。Sentry 告诉你错误*发生在哪里*；log2repro 给你一个*可重放的现场*。
+工程师 60% 以上的调试时间花在"猜参数、翻数据库、mock 第三方 API"上。
+
+**Sentry** 告诉你错误*发生在哪里*。**log2repro** 给你一个*可重放的现场*。
 
 | | Sentry | log2repro |
 |---|---|---|
@@ -61,7 +75,7 @@ requests.exceptions.ConnectionError: Connection refused'
 log2repro run error.log --dry-run
 ```
 
-### 输出
+**输出：**
 
 ```
 repro_out/
@@ -71,7 +85,7 @@ repro_out/
 └── README_repro.md     # 使用说明 + 自动修复历史
 ```
 
-### 示例 `reproduce.py`
+**示例 `reproduce.py`：**
 
 ```python
 """ConnectionError 的最小复现。"""
@@ -85,24 +99,6 @@ def test_api_connection():
 
 if __name__ == "__main__":
     test_api_connection()
-```
-
-## 用法
-
-```bash
-log2repro run <input> [OPTIONS]
-
-参数:
-  input                文件路径、"-" 表示 stdin，或原始 traceback 文本
-
-选项:
-  -m, --model TEXT     LLM 模型（默认: gpt-4o）
-  -n, --dry-run        仅解析，跳过 LLM 生成
-  -d, --output-dir     输出目录（默认: ./repro_out）
-  -o, --output         将 JSON 写入文件（旧模式）
-  --sandbox-timeout    沙箱执行最大秒数（默认: 10）
-  --max-refine         沙箱→LLM 最大修正轮次（默认: 2）
-  -v, --verbose        启用详细日志
 ```
 
 ## 工作原理
@@ -128,21 +124,23 @@ log2repro run <input> [OPTIONS]
 4. **沙箱验证** — 创建 venv，安装依赖，禁用网络运行脚本，检查 stderr 中是否出现原始错误
 5. **自动修复** — 如果沙箱因可修复错误（SyntaxError、ImportError 等）失败，将 stderr 反馈给 LLM 进行定向修复
 
-## 文档
+## CLI 参考
 
-完整文档请参阅 [docs_zh/index.md](docs_zh/index.md)：
+```bash
+log2repro run <input> [OPTIONS]
 
-| 章节 | 说明 |
-|------|------|
-| [快速开始](docs_zh/getting-started.md) | 安装、首次复现、配置 |
-| [用户指南](docs_zh/user-guide.md) | CLI 参考、输入格式、输出结构 |
-| [架构](docs_zh/architecture.md) | 5 阶段流水线、模块图、设计决策 |
-| [解析器参考](docs_zh/parser-reference.md) | 支持的日志格式、正则规则、边界情况 |
-| [LLM 提示设计](docs_zh/llm-prompt-design.md) | 系统提示、AST 注入、修正策略 |
-| [评估指南](docs_zh/evaluation.md) | 4 个质量指标、基准测试框架 |
-| [贡献指南](docs_zh/contributing.md) | 开发环境、测试规范、代码风格 |
-| [更新日志](docs_zh/changelog.md) | 版本历史 |
-| [路线图](docs_zh/roadmap.md) | 里程碑与规划中的功能 |
+参数:
+  input                文件路径、"-" 表示 stdin，或原始 traceback 文本
+
+选项:
+  -m, --model TEXT     LLM 模型（默认: gpt-4o）
+  -n, --dry-run        仅解析，跳过 LLM 生成
+  -d, --output-dir     输出目录（默认: ./repro_out）
+  -o, --output         将 JSON 写入文件（旧模式）
+  --sandbox-timeout    沙箱执行最大秒数（默认: 10）
+  --max-refine         沙箱→LLM 最大修正轮次（默认: 2）
+  -v, --verbose        启用详细日志
+```
 
 ## 支持的错误格式
 
@@ -156,7 +154,7 @@ log2repro run <input> [OPTIONS]
 | 深层调用栈 | 装饰器、中间件、递归、上下文管理器、回调 |
 | 网络/数据库 | `requests`、`httpx`、`aiohttp`、`sqlalchemy`、`psycopg2` |
 
-## 评估指标
+## 评估
 
 ```python
 from log2repro.eval_metrics import evaluate_batch, GenerationInput
@@ -174,10 +172,25 @@ print(batch.report())
 | **Mock 覆盖率** ↑ | 外部调用（网络、数据库）被正确 mock |
 | **Token 效率** ↑ | 每 1,000 token 复现的错误数 |
 
+## 文档
+
+完整文档：**[docs_zh/index.md](docs_zh/index.md)**
+
+<details>
+<summary>目录</summary>
+
+| 入门指南 | 参考手册 | 开发 |
+|----------|----------|------|
+| [快速开始](docs_zh/getting-started.md) | [解析器参考](docs_zh/parser-reference.md) | [架构](docs_zh/architecture.md) |
+| [用户指南](docs_zh/user-guide.md) | [LLM 提示设计](docs_zh/llm-prompt-design.md) | [贡献指南](docs_zh/contributing.md) |
+| | [评估指南](docs_zh/evaluation.md) | [更新日志](docs_zh/changelog.md) |
+| | | [路线图](docs_zh/roadmap.md) |
+
+</details>
+
 ## 开发
 
 ```bash
-# 环境搭建
 git clone https://github.com/ChanChiChoi/log2repro.git
 cd log2repro
 uv sync --group dev
@@ -192,36 +205,24 @@ uv run python -m benchmarks.runner
 uv run ruff check src/ tests/
 ```
 
-### 项目结构
+<details>
+<summary>项目结构</summary>
 
 ```
 log2repro/
 ├── src/log2repro/
 │   ├── cli.py              # Typer CLI 入口
-│   ├── eval_metrics.py     # 4 个质量指标（可运行、依赖、mock、token）
-│   ├── parsers/
-│   │   ├── base.py         # ParsedTrace 模型 + BaseParser 抽象类
-│   │   ├── stacktrace.py   # Python traceback 解析器（正则）
-│   │   ├── sentry.py       # Sentry JSON 解析器
-│   │   └── ci_log.py       # CI 日志解析器
-│   ├── extractors/
-│   │   └── ast_parser.py   # AST 上下文提取（签名、import、变量）
-│   ├── generators/
-│   │   ├── prompts.py      # 系统提示（通用/网络/数据库）+ 模板
-│   │   └── code_gen.py     # LLM 生成 + 沙箱反馈循环
-│   ├── validators/
-│   │   ├── sandbox.py      # venv + 子进程沙箱，网络隔离
-│   │   └── auto_fix.py     # 自动修复链（分类 → LLM 修复 → 降级）
-│   └── utils/
-│       └── io.py           # 输入读取（文件/stdin/原始字符串）
-├── tests/
-│   ├── fixtures/            # 30+ 真实错误 trace 样本
-│   └── test_*.py            # 385 个测试
-└── benchmarks/
-    ├── prompt_variants.py   # 5 个 prompt 变体用于对比
-    ├── runner.py            # 基准测试执行引擎
-    └── validator.py         # 幻觉 + 触发检测
+│   ├── eval_metrics.py     # 4 个质量指标
+│   ├── parsers/            # 日志解析（traceback、sentry、CI）
+│   ├── extractors/         # AST 上下文提取
+│   ├── generators/         # LLM 生成 + 提示
+│   ├── validators/         # 沙箱 + 自动修复
+│   └── utils/              # I/O 工具
+├── tests/                  # 385 个测试，30+ 夹具
+└── benchmarks/             # Prompt 变体基准测试
 ```
+
+</details>
 
 ## 致谢
 
@@ -232,4 +233,4 @@ log2repro/
 
 ## 许可证
 
-MIT
+[MIT](LICENSE)

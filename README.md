@@ -1,16 +1,30 @@
 # log2repro
 
-**Error log → runnable reproduction code generator.**
+<p align="center">
+  <strong>Error log → runnable reproduction code generator</strong>
+</p>
 
-> **[中文文档](README_zh.md)** | **[English Docs](docs/index.md)**
+<p align="center">
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/Python-3.10+-blue.svg" alt="Python 3.10+"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT License"></a>
+  <a href="https://github.com/ChanChiChoi/log2repro/actions"><img src="https://img.shields.io/badge/tests-385-brightgreen.svg" alt="Tests"></a>
+</p>
+
+<p align="center">
+  <a href="README_zh.md">中文文档</a> · <a href="docs/index.md">English Docs</a>
+</p>
+
+---
 
 Paste a Python traceback, get a self-contained `reproduce.py` that triggers the original error — with `requirements.txt`, mock data, and a verification README.
 
-> Average reproduction time: **45 min → 3 min**.
+> **45 min → 3 min** average reproduction time.
 
-## Why?
+## Why log2repro?
 
-Engineers spend 60%+ of debug time on "guess parameters, dig through databases, mock third-party APIs". Sentry tells you *where* the error happened; log2repro gives you a *replayable scene*.
+Engineers spend 60%+ of debug time on "guess parameters, dig through databases, mock third-party APIs".
+
+**Sentry** tells you *where* the error happened. **log2repro** gives you a *replayable scene*.
 
 | | Sentry | log2repro |
 |---|---|---|
@@ -61,7 +75,7 @@ requests.exceptions.ConnectionError: Connection refused'
 log2repro run error.log --dry-run
 ```
 
-### Output
+**Output:**
 
 ```
 repro_out/
@@ -71,7 +85,7 @@ repro_out/
 └── README_repro.md     # Usage instructions + auto-fix history
 ```
 
-### Example `reproduce.py`
+**Example `reproduce.py`:**
 
 ```python
 """Minimal reproduction for ConnectionError."""
@@ -85,24 +99,6 @@ def test_api_connection():
 
 if __name__ == "__main__":
     test_api_connection()
-```
-
-## Usage
-
-```bash
-log2repro run <input> [OPTIONS]
-
-Arguments:
-  input                File path, "-" for stdin, or raw traceback text
-
-Options:
-  -m, --model TEXT     LLM model (default: gpt-4o)
-  -n, --dry-run        Parse only, skip LLM generation
-  -d, --output-dir     Output directory (default: ./repro_out)
-  -o, --output         Write JSON to file (legacy mode)
-  --sandbox-timeout    Max seconds for sandbox execution (default: 10)
-  --max-refine         Max sandbox→LLM refinement rounds (default: 2)
-  -v, --verbose        Enable verbose logging
 ```
 
 ## How It Works
@@ -128,21 +124,23 @@ Options:
 4. **Sandbox Verify** — creates venv, installs deps, runs script with network disabled, checks if original error appears in stderr
 5. **Auto-fix** — if sandbox fails with a fixable error (SyntaxError, ImportError, etc.), feeds stderr back to LLM for targeted repair
 
-## Documentation
+## CLI Reference
 
-Full documentation is available in [docs/index.md](docs/index.md):
+```bash
+log2repro run <input> [OPTIONS]
 
-| Section | Description |
-|---------|-------------|
-| [Getting Started](docs/getting-started.md) | Installation, first reproduction, configuration |
-| [User Guide](docs/user-guide.md) | CLI reference, input formats, output structure |
-| [Architecture](docs/architecture.md) | 5-stage pipeline, module map, design decisions |
-| [Parser Reference](docs/parser-reference.md) | Supported log formats, regex rules, edge cases |
-| [LLM Prompt Design](docs/llm-prompt-design.md) | System prompts, AST injection, refinement strategy |
-| [Evaluation Guide](docs/evaluation.md) | 4 quality metrics, benchmark framework |
-| [Contributing](docs/contributing.md) | Dev setup, testing, code style, PR process |
-| [Changelog](docs/changelog.md) | Version history |
-| [Roadmap](docs/roadmap.md) | Milestones and planned features |
+Arguments:
+  input                File path, "-" for stdin, or raw traceback text
+
+Options:
+  -m, --model TEXT     LLM model (default: gpt-4o)
+  -n, --dry-run        Parse only, skip LLM generation
+  -d, --output-dir     Output directory (default: ./repro_out)
+  -o, --output         Write JSON to file (legacy mode)
+  --sandbox-timeout    Max seconds for sandbox execution (default: 10)
+  --max-refine         Max sandbox→LLM refinement rounds (default: 2)
+  -v, --verbose        Enable verbose logging
+```
 
 ## Supported Error Formats
 
@@ -156,7 +154,7 @@ Full documentation is available in [docs/index.md](docs/index.md):
 | Deep call stacks | Decorators, middleware, recursion, context managers, callbacks |
 | Network/DB | `requests`, `httpx`, `aiohttp`, `sqlalchemy`, `psycopg2` |
 
-## Evaluation Metrics
+## Evaluation
 
 ```python
 from log2repro.eval_metrics import evaluate_batch, GenerationInput
@@ -174,10 +172,25 @@ print(batch.report())
 | **Mock Coverage** ↑ | External calls (network, DB) are properly mocked |
 | **Token Efficiency** ↑ | Errors reproduced per 1,000 tokens |
 
+## Documentation
+
+Full documentation: **[docs/index.md](docs/index.md)**
+
+<details>
+<summary>Table of Contents</summary>
+
+| Guide | Reference | Development |
+|-------|-----------|-------------|
+| [Getting Started](docs/getting-started.md) | [Parser Reference](docs/parser-reference.md) | [Architecture](docs/architecture.md) |
+| [User Guide](docs/user-guide.md) | [LLM Prompt Design](docs/llm-prompt-design.md) | [Contributing](docs/contributing.md) |
+| | [Evaluation Guide](docs/evaluation.md) | [Changelog](docs/changelog.md) |
+| | | [Roadmap](docs/roadmap.md) |
+
+</details>
+
 ## Development
 
 ```bash
-# Setup
 git clone https://github.com/ChanChiChoi/log2repro.git
 cd log2repro
 uv sync --group dev
@@ -192,36 +205,24 @@ uv run python -m benchmarks.runner
 uv run ruff check src/ tests/
 ```
 
-### Project Structure
+<details>
+<summary>Project Structure</summary>
 
 ```
 log2repro/
 ├── src/log2repro/
 │   ├── cli.py              # Typer CLI entry point
-│   ├── eval_metrics.py     # 4 quality metrics (runnable, deps, mock, tokens)
-│   ├── parsers/
-│   │   ├── base.py         # ParsedTrace model + BaseParser ABC
-│   │   ├── stacktrace.py   # Python traceback parser (regex)
-│   │   ├── sentry.py       # Sentry JSON parser (stub)
-│   │   └── ci_log.py       # CI log parser (stub)
-│   ├── extractors/
-│   │   └── ast_parser.py   # AST context extraction (signatures, imports, vars)
-│   ├── generators/
-│   │   ├── prompts.py      # System prompts (general/network/database) + templates
-│   │   └── code_gen.py     # LLM generation + sandbox feedback loop
-│   ├── validators/
-│   │   ├── sandbox.py      # venv + subprocess sandbox with network isolation
-│   │   └── auto_fix.py     # Auto-fix chain (classify → LLM repair → degrade)
-│   └── utils/
-│       └── io.py           # Input reading (file/stdin/raw string)
-├── tests/
-│   ├── fixtures/            # 30+ real-world error trace samples
-│   └── test_*.py            # 385 tests
-└── benchmarks/
-    ├── prompt_variants.py   # 5 prompt variants for comparison
-    ├── runner.py            # Benchmark execution engine
-    └── validator.py         # Hallucination + trigger detection
+│   ├── eval_metrics.py     # 4 quality metrics
+│   ├── parsers/            # Log parsing (traceback, sentry, CI)
+│   ├── extractors/         # AST context extraction
+│   ├── generators/         # LLM generation + prompts
+│   ├── validators/         # Sandbox + auto-fix
+│   └── utils/              # I/O helpers
+├── tests/                  # 385 tests, 30+ fixtures
+└── benchmarks/             # Prompt variant benchmarking
 ```
+
+</details>
 
 ## Acknowledgements
 
@@ -232,4 +233,4 @@ log2repro/
 
 ## License
 
-MIT
+[MIT](LICENSE)
