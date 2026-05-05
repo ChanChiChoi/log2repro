@@ -78,7 +78,116 @@
 - [ ] Python API `analyze(traceback)` 支持编程调用
 - [ ] 分析输出结构与内容质量的单元测试
 
-### D9 — 语言扩展（规划中）
+### D9 — Python 错误格式完整性（规划中）
+
+> 详细参考：[python-error-format-gaps.md](python-error-format-gaps.md)
+
+- [ ] SyntaxError / IndentationError / TabError 带 `^` 指针格式
+  - 独立 SyntaxError：返回 0 traces（无 call site 匹配）
+  - 有前序调用栈的 SyntaxError：指向错误的 frame（最后一个 `in func` 的 frame，而非 SyntaxError 行）
+  - 支持 `File "x.py", line N` 格式（无 `, in func_name`）
+  - 从指针位置提取错误列号
+- [ ] ExceptionGroup / BaseExceptionGroup（Python 3.11+）
+  - `+ Exception Group Traceback` 标题不被 `^Traceback` 正则匹配
+  - `|` 前缀阻止子异常中 `_RE_CALL_SITE` 匹配
+  - 递归解析子异常，将所有子 trace 提取为独立 ParsedTrace 对象
+- [ ] Logging exc_info 前缀格式（高优先级）
+  - `2024-01-15 ERROR ... Traceback (most recent call last):` — 时间戳前缀导致 `^Traceback` 不匹配
+  - 生产日志中最常见的格式（`logging.exception()`、`logging.error(exc_info=True)`）
+- [ ] Warning 格式（`file:line: WarningType: message`）
+  - 新增 `WarningParser` 处理非 traceback 的 warning 输出
+- [ ] RecursionError 深度保留
+  - 解析 `[Previous line repeated N more times]` 行
+  - 在 ParsedTrace 元数据中存储重复次数
+- [ ] Exception notes（Python 3.11+ `add_note()`）
+  - 捕获异常行之后的 note 行
+  - 给 `ParsedTrace` 新增 `notes: list[str]` 字段
+- [ ] Re-raise 标注（无参数 `raise`）
+  - 裸 `raise` 当前被当作普通 traceback 解析
+  - 应标注为 re-raise 以提供更好的复现上下文
+- [ ] 更新 `_RE_CALL_SITE` 可选匹配无 `in func` 的 `File "x.py", line N`
+
+### D10 — LLM / Agent / MCP 错误格式支持（规划中）
+
+> 详细参考：[python-error-format-gaps.md § LLM/Agent/MCP](python-error-format-gaps.md#10-llm-api-error-json-response)
+
+- [ ] LLM API Error JSON 解析器（`APIErrorParser`）
+  - 解析 OpenAI / Anthropic / LiteLLM JSON 错误响应
+  - 提取 `error.type`、`error.code`、`error.message` → `ParsedTrace`
+- [ ] Token / Context Window 错误解析器（`LLMErrorParser`）
+  - 解析纯文本的上下文限制和速率限制消息
+  - 提取模型名、token 数量、重试时间
+- [ ] MCP JSON-RPC 错误解析器（`MCPRpcParser`）
+  - 解析 MCP stderr 中的 `{"jsonrpc":"2.0","error":{"code":...,"message":...}}`
+  - 将 JSON-RPC 错误码映射为可读类型
+- [ ] LangChain Agent verbose 输出解析器（`AgentLogParser`）
+  - 解析 `Thought/Action/Observation` 链式格式
+  - 从 `Observation` 行提取工具名、参数、错误
+- [ ] Agent tool 执行错误（截断格式）
+  - 处理 `[AgentError] Tool execution failed:` 风格输出
+- [ ] Google Gemini API 错误解析器（`GeminiErrorParser`）
+  - 解析 `google.api_core.exceptions`（BadRequest, ResourceExhausted, PermissionDenied）
+  - 处理 `google-genai` SDK 的 `ClientError`/`ServerError` 格式
+- [ ] A2A 协议错误解析器（`A2AErrorParser`）
+  - 解析 Agent-to-Agent JSON-RPC 2.0 错误
+  - 映射 A2A 专属错误码：-32001 Task not found、-32002 Task cannot be canceled、-32003 Push notification not supported、-32004 Unsupported operation、-32005 Content type not supported
+- [ ] 内容审核/安全过滤错误
+  - 解析 `content_policy_violation`（OpenAI）、安全相关的 `invalid_request_error`（Anthropic）
+  - 提取违规类别用于复现上下文
+- [ ] Tool Calling / Function Calling 错误
+  - 解析 JSON Schema 验证失败（`strict: true` 不支持的字段：`format`、`allOf`、`anyOf`）
+  - 解析工具参数类型不匹配错误
+  - 解析 `run_requires_action` / 工具输出格式错误（OpenAI Assistants API）
+- [ ] OpenAI Responses API 错误
+  - 解析 `response.failed` SSE 事件：`{"type":"response.failed","response":{"error":{...}}}`
+  - 与 Chat Completions 格式并存处理
+- [ ] Agent 框架错误（CrewAI / AutoGen / Google ADK / Semantic Kernel）
+  - 解析 CrewAI `CrewError` / `AgentExecutionError` 包装格式
+  - 解析 AutoGen `TerminationException` / `GroupChatError` 格式
+  - 解析 Google ADK `google.adk.errors` 格式
+- [ ] LiteLLM 统一异常体系
+  - 解析 8 个异常类：`AuthenticationError`、`RateLimitError`、`ContextWindowExceededError`、`BudgetExceededError`、`ContentPolicyViolationError` 等
+  - 映射 LiteLLM proxy 统一 JSON 错误格式
+- [ ] Anthropic Extended Thinking 错误
+  - 解析 thinking block 格式错误和 `budget_tokens` 超限错误
+- [ ] Embedding API 错误
+  - 解析 OpenAI/Anthropic embedding 端点错误（维度不匹配、输入过长）
+  - 扩展 `APIErrorParser` 处理 embedding 专属错误码
+- [ ] Batch API 错误
+  - 解析 OpenAI Batch API `batch.failed` 状态（含错误行数统计）
+  - 扩展 `APIErrorParser` 处理 batch 专属错误格式
+- [ ] Realtime API WebSocket 错误
+  - 解析 OpenAI Realtime API WebSocket 错误事件
+  - 处理连接级和会话级错误类型
+- [ ] 音频 API 错误（Whisper / TTS / Realtime Voice）
+  - 解析 OpenAI Whisper 语音转写错误（不支持的编码、文件大小、时长限制）
+  - 解析 TTS 错误（无效 voice/model、输入文本过长）
+  - 解析 Realtime Voice API 音频流错误
+- [ ] 文档/PDF 输入错误
+  - 解析 Anthropic PDF 错误（`document` content block、base64 编码、大小 ~10MB 限制）
+  - 解析 Google Gemini 文件上传错误（`client.files.upload()`、MIME type）
+  - 解析 OpenAI Assistants API 文件上传错误
+- [ ] Google Gemini 多模态错误
+  - 解析视频上传/处理错误（格式、大小、时长）
+  - 解析音频输入错误
+  - 解析 File API 错误（`client.files.upload()`）
+  - 处理多模态 token 计算差异
+- [ ] 图片生成 API 错误（DALL-E / Imagen）
+  - 解析生成特有的内容策略违规
+  - 解析无效生成参数（size、quality、style、prompt 长度）
+  - 解析生成端点专属速率限制
+- [ ] 视频理解错误
+  - 解析 Gemini 视频上传/处理错误
+  - 解析视频时长和格式限制
+- [ ] 多模态 token 计算错误
+  - 解析基于分辨率的图片 token 错误（OpenAI）
+  - 解析按媒体类型的 token 成本错误（Gemini）
+  - 解析混合媒体上下文窗口计算错误
+- [ ] LLM 专用系统提示
+  - 新增 `SYSTEM_PROMPT_LLM`，针对 LLM/Agent 错误（mock API 响应、重试逻辑）
+  - 错误类型匹配 `openai.*`、`anthropic.*`、`litellm.*`、`langchain.*`、`google.*`、`crewai.*` 时自动选择
+
+### D11 — 语言扩展（规划中）
 
 - [ ] JavaScript/TypeScript 堆栈跟踪解析器
 - [ ] Java 堆栈跟踪解析器
@@ -86,7 +195,7 @@
 - [ ] Rust panic 解析器
 - [ ] 语言专用系统提示
 
-### D10 — Web UI（规划中）
+### D12 — Web UI（规划中）
 
 - [ ] FastAPI 后端
 - [ ] React 前端
@@ -94,14 +203,14 @@
 - [ ] 历史记录 / 已保存的复现
 - [ ] 可分享的复现链接
 
-### D11 — CI/CD 集成（规划中）
+### D13 — CI/CD 集成（规划中）
 
 - [ ] GitHub Action
 - [ ] GitLab CI 模板
 - [ ] 在 issue 中自动评论复现脚本
 - [ ] Sentry 插件 / webhook
 
-### D12 — 高级功能（规划中）
+### D14 — 高级功能（规划中）
 
 - [ ] 多文件复现（不仅限于单脚本）
 - [ ] Docker 沙箱（更强隔离）

@@ -10,6 +10,7 @@
 ## Reference
 
 - [Parser Reference](parser-reference.md) — Supported log formats, regex rules, edge cases
+- [Python Error Format Gaps](python-error-format-gaps.md) — Unsupported formats with examples & fix plan (D9)
 - [LLM Prompt Design](llm-prompt-design.md) — System prompts, AST injection, refinement strategy
 - [Evaluation Guide](evaluation.md) — 4 quality metrics, benchmark framework
 

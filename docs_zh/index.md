@@ -10,6 +10,7 @@
 ## 参考手册
 
 - [解析器参考](parser-reference.md) — 支持的日志格式、正则规则、边界情况
+- [Python 错误格式 Gap](python-error-format-gaps.md) — 未支持格式的详细示例与修复方案（D9）
 - [LLM 提示设计](llm-prompt-design.md) — 系统提示、AST 注入、修正策略
 - [评估指南](evaluation.md) — 4 个质量指标、基准测试框架
 
