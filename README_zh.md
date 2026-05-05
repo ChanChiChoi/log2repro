@@ -2,7 +2,7 @@
 
 **错误日志 → 可运行的复现代码生成器。**
 
-> **[English](README.md)** | **[中文文档](docs_zh/)**
+> **[English](README.md)** | **[中文文档](docs_zh/index.md)**
 
 粘贴一段 Python traceback，即可获得一个独立的 `reproduce.py`，能触发原始错误——附带 `requirements.txt`、mock 数据和验证说明。
 
@@ -127,6 +127,22 @@ log2repro run <input> [OPTIONS]
 3. **LLM 生成** — 将结构化提示（错误 + AST 上下文）发送给 LLM，解析 Markdown 代码块
 4. **沙箱验证** — 创建 venv，安装依赖，禁用网络运行脚本，检查 stderr 中是否出现原始错误
 5. **自动修复** — 如果沙箱因可修复错误（SyntaxError、ImportError 等）失败，将 stderr 反馈给 LLM 进行定向修复
+
+## 文档
+
+完整文档请参阅 [docs_zh/index.md](docs_zh/index.md)：
+
+| 章节 | 说明 |
+|------|------|
+| [快速开始](docs_zh/getting-started.md) | 安装、首次复现、配置 |
+| [用户指南](docs_zh/user-guide.md) | CLI 参考、输入格式、输出结构 |
+| [架构](docs_zh/architecture.md) | 5 阶段流水线、模块图、设计决策 |
+| [解析器参考](docs_zh/parser-reference.md) | 支持的日志格式、正则规则、边界情况 |
+| [LLM 提示设计](docs_zh/llm-prompt-design.md) | 系统提示、AST 注入、修正策略 |
+| [评估指南](docs_zh/evaluation.md) | 4 个质量指标、基准测试框架 |
+| [贡献指南](docs_zh/contributing.md) | 开发环境、测试规范、代码风格 |
+| [更新日志](docs_zh/changelog.md) | 版本历史 |
+| [路线图](docs_zh/roadmap.md) | 里程碑与规划中的功能 |
 
 ## 支持的错误格式
 

@@ -2,7 +2,7 @@
 
 **Error log → runnable reproduction code generator.**
 
-> **[中文文档](README_zh.md)** | **[English Docs](docs/)**
+> **[中文文档](README_zh.md)** | **[English Docs](docs/index.md)**
 
 Paste a Python traceback, get a self-contained `reproduce.py` that triggers the original error — with `requirements.txt`, mock data, and a verification README.
 
@@ -127,6 +127,22 @@ Options:
 3. **LLM Generate** — sends structured prompt (error + AST context) to LLM, parses Markdown code blocks
 4. **Sandbox Verify** — creates venv, installs deps, runs script with network disabled, checks if original error appears in stderr
 5. **Auto-fix** — if sandbox fails with a fixable error (SyntaxError, ImportError, etc.), feeds stderr back to LLM for targeted repair
+
+## Documentation
+
+Full documentation is available in [docs/index.md](docs/index.md):
+
+| Section | Description |
+|---------|-------------|
+| [Getting Started](docs/getting-started.md) | Installation, first reproduction, configuration |
+| [User Guide](docs/user-guide.md) | CLI reference, input formats, output structure |
+| [Architecture](docs/architecture.md) | 5-stage pipeline, module map, design decisions |
+| [Parser Reference](docs/parser-reference.md) | Supported log formats, regex rules, edge cases |
+| [LLM Prompt Design](docs/llm-prompt-design.md) | System prompts, AST injection, refinement strategy |
+| [Evaluation Guide](docs/evaluation.md) | 4 quality metrics, benchmark framework |
+| [Contributing](docs/contributing.md) | Dev setup, testing, code style, PR process |
+| [Changelog](docs/changelog.md) | Version history |
+| [Roadmap](docs/roadmap.md) | Milestones and planned features |
 
 ## Supported Error Formats
 
