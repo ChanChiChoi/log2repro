@@ -6,22 +6,46 @@ build-backend = "hatchling.build"
 name = "log2repro"
 version = "0.1.0"
 description = "Error log → runnable reproduction code generator"
-requires-python = ">=3.10"
+readme = "README.md"
 license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "ChanChiChoi" },
+]
+keywords = ["debugging", "reproduction", "traceback", "error-log", "llm", "sandbox"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Debuggers",
+    "Topic :: Software Development :: Testing",
+]
 dependencies = [
     "typer>=0.9.0",
-    "litellm>=1.30.0",      # 统一 OpenAI/Anthropic/本地模型调用
-    "jinja2>=3.1.2",        # 模板渲染
-    "pydantic>=2.0.0",      # 数据结构校验
-    "tree-sitter>=0.20.0",  # 可选：v2 支持多语言
-    "pytest>=7.4.0",        # 测试 & 沙箱验证
-    "rich>=13.0.0",         # 终端 UI
+    "litellm>=1.30.0",
+    "jinja2>=3.1.2",
+    "pydantic>=2.0.0",
+    "rich>=13.0.0",
 ]
 
 [project.optional-dependencies]
 dev = [
+    "pytest>=7.4.0",
     "pytest-cov>=4.0.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/ChanChiChoi/log2repro"
+Documentation = "https://github.com/ChanChiChoi/log2repro/tree/main/docs"
+Repository = "https://github.com/ChanChiChoi/log2repro"
+Issues = "https://github.com/ChanChiChoi/log2repro/issues"
+Changelog = "https://github.com/ChanChiChoi/log2repro/blob/main/docs/changelog.md"
 
 [[tool.uv.index]]
 url = "https://mirrors.aliyun.com/pypi/simple/"
@@ -33,6 +57,9 @@ log2repro = "log2repro.cli:app"
 [tool.hatch.build.targets.wheel]
 packages = ["src/log2repro"]
 
+[tool.hatch.build.targets.sdist]
+include = ["src/", "tests/", "docs/", "README.md", "LICENSE", "pyproject.toml"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
@@ -41,4 +68,6 @@ pythonpath = ["src"]
 dev = [
     "pytest>=9.0.3",
     "pytest-cov>=7.1.0",
+    "build>=1.0.0",
+    "twine>=5.0.0",
 ]
