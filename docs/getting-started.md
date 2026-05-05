@@ -115,12 +115,14 @@ log2repro uses [litellm](https://github.com/BerriAI/litellm) — set the model v
 
 | Provider | Model Prefix | API Key | Base URL | Default |
 |----------|-------------|---------|----------|---------|
-| Ollama | `ollama/llama3` | not required | `OLLAMA_API_BASE` | `http://localhost:11434` |
-| vLLM | `vllm/model-name` | `VLLM_API_KEY` (optional) | `VLLM_API_BASE` | — |
-| SGLang | `openai/model-name` | not required | `OPENAI_API_BASE` | `http://localhost:30000/v1` |
-| LM Studio | `lm_studio/model-name` | not required | `LM_STUDIO_API_BASE` | — |
-| Llamafile | `llamafile/model-name` | not required | `LLAMAFILE_API_BASE` | `http://127.0.0.1:8080/v1` |
-| Xinference | `xinference/model-name` | not required | `XINFERENCE_API_BASE` | — |
+| Ollama | `ollama/llama3` | `OLLAMA_API_KEY` | `OLLAMA_API_BASE` | `http://localhost:11434` |
+| vLLM | `hosted_vllm/model-name` | `HOSTED_VLLM_API_KEY` | `HOSTED_VLLM_API_BASE` | — |
+| SGLang | `openai/model-name` | `OPENAI_API_KEY` | `OPENAI_API_BASE` | `http://localhost:30000/v1` |
+| LM Studio | `lm_studio/model-name` | `LM_STUDIO_API_KEY` | `LM_STUDIO_API_BASE` | — |
+| Llamafile | `llamafile/model-name` | `LLAMAFILE_API_KEY` | `LLAMAFILE_API_BASE` | `http://127.0.0.1:8080/v1` |
+| Xinference | `xinference/model-name` | `XINFERENCE_API_KEY` | `XINFERENCE_API_BASE` | — |
+
+> **Note:** For locally deployed models with authentication enabled (common in enterprise environments), set the corresponding API key. If no authentication is configured, these can be omitted — litellm will use a placeholder value automatically.
 
 #### Examples
 
@@ -159,6 +161,16 @@ log2repro run error.log --model groq/llama3-70b-8192
 # LM Studio (local)
 export LM_STUDIO_API_BASE="http://localhost:1234/v1"
 log2repro run error.log --model lm_studio/local-model
+
+# Enterprise Ollama with API key
+export OLLAMA_API_BASE="http://ollama.internal:11434"
+export OLLAMA_API_KEY="sk-..."
+log2repro run error.log --model ollama/llama3
+
+# Enterprise vLLM with API key
+export HOSTED_VLLM_API_BASE="http://vllm.internal:8000/v1"
+export HOSTED_VLLM_API_KEY="sk-..."
+log2repro run error.log --model hosted_vllm/Qwen/Qwen2.5-7B-Instruct
 ```
 
 > **Tip:** For local providers (Ollama, vLLM, SGLang, LM Studio), ensure the model server is running before invoking log2repro.

@@ -115,12 +115,14 @@ log2repro 使用 [litellm](https://github.com/BerriAI/litellm)——通过 `--mo
 
 | 提供商 | 模型前缀 | API 密钥 | Base URL | 默认值 |
 |--------|----------|----------|----------|--------|
-| Ollama | `ollama/llama3` | 不需要 | `OLLAMA_API_BASE` | `http://localhost:11434` |
-| vLLM | `vllm/模型名` | `VLLM_API_KEY`（可选） | `VLLM_API_BASE` | — |
-| SGLang | `openai/模型名` | 不需要 | `OPENAI_API_BASE` | `http://localhost:30000/v1` |
-| LM Studio | `lm_studio/模型名` | 不需要 | `LM_STUDIO_API_BASE` | — |
-| Llamafile | `llamafile/模型名` | 不需要 | `LLAMAFILE_API_BASE` | `http://127.0.0.1:8080/v1` |
-| Xinference | `xinference/模型名` | 不需要 | `XINFERENCE_API_BASE` | — |
+| Ollama | `ollama/llama3` | `OLLAMA_API_KEY` | `OLLAMA_API_BASE` | `http://localhost:11434` |
+| vLLM | `hosted_vllm/模型名` | `HOSTED_VLLM_API_KEY` | `HOSTED_VLLM_API_BASE` | — |
+| SGLang | `openai/模型名` | `OPENAI_API_KEY` | `OPENAI_API_BASE` | `http://localhost:30000/v1` |
+| LM Studio | `lm_studio/模型名` | `LM_STUDIO_API_KEY` | `LM_STUDIO_API_BASE` | — |
+| Llamafile | `llamafile/模型名` | `LLAMAFILE_API_KEY` | `LLAMAFILE_API_BASE` | `http://127.0.0.1:8080/v1` |
+| Xinference | `xinference/模型名` | `XINFERENCE_API_KEY` | `XINFERENCE_API_BASE` | — |
+
+> **注意：** 企业内部部署的本地模型通常会启用 API 密钥认证，此时需要设置对应的 API 密钥环境变量。如果服务未配置认证，可以不设置——litellm 会自动使用占位值。
 
 #### 示例
 
@@ -159,6 +161,16 @@ log2repro run error.log --model groq/llama3-70b-8192
 # LM Studio（本地）
 export LM_STUDIO_API_BASE="http://localhost:1234/v1"
 log2repro run error.log --model lm_studio/local-model
+
+# 企业内部 Ollama（带 API 密钥）
+export OLLAMA_API_BASE="http://ollama.internal:11434"
+export OLLAMA_API_KEY="sk-..."
+log2repro run error.log --model ollama/llama3
+
+# 企业内部 vLLM（带 API 密钥）
+export HOSTED_VLLM_API_BASE="http://vllm.internal:8000/v1"
+export HOSTED_VLLM_API_KEY="sk-..."
+log2repro run error.log --model hosted_vllm/Qwen/Qwen2.5-7B-Instruct
 ```
 
 > **提示：** 使用本地提供商（Ollama、vLLM、SGLang、LM Studio）时，请确保模型服务已在运行。
