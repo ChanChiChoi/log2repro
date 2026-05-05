@@ -2,7 +2,7 @@
 
 **Error log → runnable reproduction code generator.**
 
-> **[中文文档](docs_zh/)** | **[English Docs](docs/)**
+> **[中文文档](README_zh.md)** | **[English Docs](docs/)**
 
 Paste a Python traceback, get a self-contained `reproduce.py` that triggers the original error — with `requirements.txt`, mock data, and a verification README.
 
@@ -153,10 +153,10 @@ print(batch.report())
 
 | Metric | Description |
 |--------|-------------|
-| **代码可运行率** ↑ | Script executes without ImportError/SyntaxError |
-| **依赖冲突率** ↓ | requirements.txt has no version conflicts |
-| **Mock 覆盖率** ↑ | External calls (network, DB) are properly mocked |
-| **Token 效率** ↑ | Errors reproduced per 1,000 tokens |
+| **Runnable Rate** ↑ | Script executes without ImportError/SyntaxError |
+| **Dep Conflict Rate** ↓ | requirements.txt has no version conflicts |
+| **Mock Coverage** ↑ | External calls (network, DB) are properly mocked |
+| **Token Efficiency** ↑ | Errors reproduced per 1,000 tokens |
 
 ## Development
 
