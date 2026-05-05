@@ -93,19 +93,75 @@ log2repro 使用 [litellm](https://github.com/BerriAI/litellm)，支持所有 li
 
 ## 配置
 
-### LLM API 密钥
+### LLM 提供商
 
-设置对应提供商的环境变量：
+log2repro 使用 [litellm](https://github.com/BerriAI/litellm)——通过 `--model` 指定模型，设置对应的环境变量即可。litellm 根据模型前缀自动路由到对应提供商。
+
+#### 云端提供商
+
+| 提供商 | 模型前缀 | API 密钥 | Base URL（可选） |
+|--------|----------|----------|------------------|
+| OpenAI | `gpt-4o`、`gpt-4o-mini` | `OPENAI_API_KEY` | `OPENAI_API_BASE` |
+| Anthropic | `claude-3-opus`、`claude-3-sonnet` | `ANTHROPIC_API_KEY` | — |
+| Azure OpenAI | `azure/gpt-4o` | `AZURE_API_KEY` | `AZURE_API_BASE` |
+| DeepSeek | `deepseek/deepseek-chat` | `DEEPSEEK_API_KEY` | `DEEPSEEK_API_BASE` |
+| DashScope（通义千问） | `dashscope/qwen-turbo` | `DASHSCOPE_API_KEY` | `DASHSCOPE_API_BASE` |
+| Groq | `groq/llama3-70b-8192` | `GROQ_API_KEY` | `GROQ_API_BASE` |
+| Mistral | `mistral/mistral-large` | `MISTRAL_API_KEY` | `MISTRAL_API_BASE` |
+| OpenRouter | `openrouter/meta-llama/llama-3-70b` | `OPENROUTER_API_KEY` | `OPENROUTER_API_BASE` |
+| Together AI | `together_ai/meta-llama/Llama-3-70b` | `TOGETHERAI_API_KEY` | — |
+
+#### 本地 / 自托管
+
+| 提供商 | 模型前缀 | API 密钥 | Base URL | 默认值 |
+|--------|----------|----------|----------|--------|
+| Ollama | `ollama/llama3` | 不需要 | `OLLAMA_API_BASE` | `http://localhost:11434` |
+| vLLM | `vllm/模型名` | `VLLM_API_KEY`（可选） | `VLLM_API_BASE` | — |
+| SGLang | `openai/模型名` | 不需要 | `OPENAI_API_BASE` | `http://localhost:30000/v1` |
+| LM Studio | `lm_studio/模型名` | 不需要 | `LM_STUDIO_API_BASE` | — |
+| Llamafile | `llamafile/模型名` | 不需要 | `LLAMAFILE_API_BASE` | `http://127.0.0.1:8080/v1` |
+| Xinference | `xinference/模型名` | 不需要 | `XINFERENCE_API_BASE` | — |
+
+#### 示例
 
 ```bash
 # OpenAI
 export OPENAI_API_KEY="sk-..."
+log2repro run error.log --model gpt-4o
 
 # Anthropic
 export ANTHROPIC_API_KEY="sk-ant-..."
+log2repro run error.log --model claude-3-sonnet
 
-# 或使用 .env 文件
+# Ollama（本地，无需 API 密钥）
+log2repro run error.log --model ollama/llama3
+
+# Ollama 远程服务器
+export OLLAMA_API_BASE="http://192.168.1.100:11434"
+log2repro run error.log --model ollama/llama3
+
+# vLLM
+export VLLM_API_BASE="http://localhost:8000/v1"
+log2repro run error.log --model vllm/Qwen/Qwen2.5-7B-Instruct
+
+# SGLang（使用 OpenAI 兼容 API）
+export OPENAI_API_BASE="http://localhost:30000/v1"
+log2repro run error.log --model openai/Qwen/Qwen2.5-7B-Instruct
+
+# DeepSeek
+export DEEPSEEK_API_KEY="sk-..."
+log2repro run error.log --model deepseek/deepseek-chat
+
+# Groq
+export GROQ_API_KEY="gsk_..."
+log2repro run error.log --model groq/llama3-70b-8192
+
+# LM Studio（本地）
+export LM_STUDIO_API_BASE="http://localhost:1234/v1"
+log2repro run error.log --model lm_studio/local-model
 ```
+
+> **提示：** 使用本地提供商（Ollama、vLLM、SGLang、LM Studio）时，请确保模型服务已在运行。
 
 ### 沙箱超时
 
