@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/app/main.py", line 8, in <module>
+    from app.models import User, Order
+  File "/app/models/__init__.py", line 3, in <module>
+    from .user import User
+  File "/app/models/user.py", line 5, in <module>
+    from pydantic import BaseModel, Field
+ModuleNotFoundError: No module named 'pydantic'

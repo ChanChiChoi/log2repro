@@ -1,0 +1,50 @@
+INFO:     Started server process [12345]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:52340 - "POST /api/v1/users HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/home/user/project/.venv/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 407, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+  File "/home/user/project/.venv/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 78, in __call__
+    return await self.app(scope, receive, send)
+  File "/home/user/project/.venv/lib/python3.11/site-packages/fastapi/applications.py", line 292, in __call__
+    await super().__call__(scope, receive, send)
+  File "/home/user/project/.venv/lib/python3.11/site-packages/starlette/applications.py", line 122, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/user/project/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 184, in __call__
+    raise exc
+  File "/home/user/project/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 162, in __call__
+    await app(scope, receive, send)
+  File "/home/user/project/.venv/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 79, in __call__
+    raise exc
+  File "/home/user/project/.venv/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 68, in __call__
+    await app(scope, receive, send)
+  File "/home/user/project/.venv/lib/python3.11/site-packages/starlette/routing.py", line 718, in __call__
+    await route.handle(scope, receive, send)
+  File "/home/user/project/.venv/lib/python3.11/site-packages/starlette/routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "/home/user/project/.venv/lib/python3.11/site-packages/starlette/routing.py", line 66, in app
+    response = await func(request)
+  File "/home/user/project/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 278, in app
+    raw_response = await run_endpoint_function(
+  File "/home/user/project/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 193, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+  File "/home/user/project/.venv/lib/python3.11/site-packages/starlette/concurrency.py", line 41, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func, *args)
+  File "/home/user/project/.venv/lib/python3.11/site-packages/anyio/to_thread.py", line 33, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(func, cancellable, args=args)
+  File "/home/user/project/.venv/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 877, in run_sync_in_worker_thread
+    return await future
+  File "/home/user/project/.venv/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 809, in run
+    result = context.run(func, *args)
+  File "/home/user/project/app/routers/users.py", line 47, in create_user
+    db_user = UserCreate(**request.json())
+  File "/home/user/project/.venv/lib/python3.11/site-packages/pydantic/main.py", line 171, in __init__
+    self.__pydantic_validator__.validate_python(data, self_instance=self)
+pydantic_core._pydantic_core.ValidationError: 2 validation errors for UserCreate
+email
+  field required (type=value_error.missing)
+username
+  field required (type=value_error.missing)

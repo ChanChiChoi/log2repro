@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/app/main.py", line 28, in main
+    result = asyncio.run(fetch_with_timeout(url))
+  File "/usr/lib/python3.11/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+  File "/usr/lib/python3.11/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+  File "/usr/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+  File "/app/http/client.py", line 56, in fetch_with_timeout
+    return await asyncio.wait_for(_do_fetch(session, url), timeout=5.0)
+  File "/usr/lib/python3.11/asyncio/tasks.py", line 479, in wait_for
+    return fut.result()
+asyncio.exceptions.TimeoutError

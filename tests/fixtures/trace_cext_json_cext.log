@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "/app/api/parser.py", line 34, in parse_request
+    payload = json.loads(request.body)
+  File "/app/.venv/lib/python3.11/site-packages/orjson/__init__.py", line 67, in loads
+    return _orjson.loads(data)
+  File "/app/api/parser.py", line 42, in parse_request
+    return self._validate_schema(payload)
+  File "/app/api/parser.py", line 55, in _validate_schema
+    raise ParseError(f"Invalid JSON: {e}") from e
+orjson.JSONDecodeError: unexpected character: line 1 column 2 (char 1)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/server.py", line 89, in handle
+    return handler.parse_request(request)
+  File "/app/api/parser.py", line 58, in parse_request
+    raise APIError(400, str(e)) from e
+app.api.errors.APIError: 400 - Invalid JSON: unexpected character: line 1 column 2 (char 1)

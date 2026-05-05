@@ -1,0 +1,40 @@
+Epoch 1/10:   0%|          | 0/200 [00:00<?, ?it/s]
+Epoch 1/10:  12%|█▏        | 24/200 [00:03<00:22,  7.85it/s, loss=2.341]
+Traceback (most recent call last):
+  File "/home/user/project/train.py", line 156, in <module>
+    trainer.fit(model, train_loader, val_loader)
+  File "/home/user/project/.venv/lib/python3.11/site-packages/pytorch_lightning/trainer/trainer.py", line 544, in fit
+    call._call_and_handle_interrupt(
+  File "/home/user/project/.venv/lib/python3.11/site-packages/pytorch_lightning/trainer/call.py", line 44, in _call_and_handle_interrupt
+    return trainer_fn(*args, **kwargs)
+  File "/home/user/project/.venv/lib/python3.11/site-packages/pytorch_lightning/trainer/trainer.py", line 582, in _fit_impl
+    self._run(model, ckpt_path=ckpt_path)
+  File "/home/user/project/.venv/lib/python3.11/site-packages/pytorch_lightning/trainer/trainer.py", line 987, in _run
+    results = self._run_stage()
+  File "/home/user/project/.venv/lib/python3.11/site-packages/pytorch_lightning/trainer/trainer.py", line 1033, in _run_stage
+    self.fit_loop.run()
+  File "/home/user/project/.venv/lib/python3.11/site-packages/pytorch_lightning/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/user/project/.venv/lib/python3.11/site-packages/pytorch_lightning/loops/fit_loop.py", line 267, in advance
+    self._outputs = self.epoch_loop.run(self._data_fetcher)
+  File "/home/user/project/.venv/lib/python3.11/site-packages/pytorch_lightning/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/user/project/.venv/lib/python3.11/site-packages/pytorch_lightning/loops/epoch/training_epoch_loop.py", line 213, in advance
+    batch_output = self.automatic_optimization.optimization_step.run()
+  File "/home/user/project/.venv/lib/python3.11/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 196, in run
+    self.advance(*args, **kwargs)
+  File "/home/user/project/.venv/lib/python3.11/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 267, in _optimizer_step
+    call._call_lightning_module_hook(
+  File "/home/user/project/.venv/lib/python3.11/site-packages/pytorch_lightning/trainer/call.py", line 157, in _call_lightning_module_hook
+    output = fn(*args, **kwargs)
+  File "/home/user/project/models/transformer.py", line 89, in training_step
+    logits = self.forward(batch["input_ids"], batch["attention_mask"])
+  File "/home/user/project/models/transformer.py", line 54, in forward
+    attn_output = self.attention(query, key, value, attn_mask=mask)
+  File "/home/user/project/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/user/project/.venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/user/project/.venv/lib/python3.11/site-packages/torch/nn/modules/linear.py", line 114, in forward
+    return F.linear(input, self.bias, self.weight)
+RuntimeError: mat1 and mat2 shapes cannot be multiplied (32x512 and 256x256)

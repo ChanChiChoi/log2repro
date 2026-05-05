@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "/app/pipeline/runner.py", line 112, in run
+    step.execute(context)
+  File "/app/pipeline/steps.py", line 45, in execute
+    plugin = self._load_plugin(self.plugin_name)
+  File "/app/pipeline/steps.py", line 62, in _load_plugin
+    spec = importlib.util.find_spec(f"plugins.{name}")
+  File "/app/pipeline/steps.py", line 71, in _load_plugin
+    module = importlib.util.module_from_spec(spec)
+  File "/app/pipeline/steps.py", line 78, in _load_plugin
+    spec.loader.exec_module(module)
+  File "/app/plugins/custom/etl_transform.py", line 15, in <module>
+    from app.connectors.kafka import KafkaConsumer
+  File "/app/connectors/kafka.py", line 8, in <module>
+    from confluent_kafka import Consumer, KafkaError
+ModuleNotFoundError: No module named 'confluent_kafka'

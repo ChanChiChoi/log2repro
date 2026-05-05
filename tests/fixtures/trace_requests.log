@@ -1,0 +1,46 @@
+2026-05-05 15:01:42,891 - app.workers.sync - INFO - Starting sync job for provider=stripe
+2026-05-05 15:01:42,903 - app.workers.sync - INFO - Fetching charges from API: https://api.stripe.com/v1/charges?limit=100&created[gte]=1714900000
+2026-05-05 15:01:43,456 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): api.stripe.com:443
+2026-05-05 15:01:44,012 - urllib3.connectionpool - DEBUG - https://api.stripe.com:443 "GET /v1/charges?limit=100&created%5Bgte%5D=1714900000 HTTP/1.1" 200 15234
+2026-05-05 15:01:44,015 - app.workers.sync - INFO - Received 100 charges, processing batch 1
+Traceback (most recent call last):
+  File "/home/user/project/.venv/lib/python3.11/site-packages/requests/adapters.py", line 486, in send
+    resp = conn.urlopen(
+  File "/home/user/project/.venv/lib/python3.11/site-packages/urllib3/connectionpool.py", line 791, in urlopen
+    response = self._do_request(
+  File "/home/user/project/.venv/lib/python3.11/site-packages/urllib3/connectionpool.py", line 791, in urlopen
+    response = self._do_request(
+  File "/home/user/project/.venv/lib/python3.11/site-packages/urllib3/connectionpool.py", line 537, in _do_request
+    self._validate_conn(conn)
+  File "/home/user/project/.venv/lib/python3.11/site-packages/urllib3/connectionpool.py", line 1137, in _validate_conn
+    conn.connect()
+  File "/home/user/project/.venv/lib/python3.11/site-packages/urllib3/connection.py", line 616, in connect
+    self.sock = ssl_wrap_socket(
+  File "/home/user/project/.venv/lib/python3.11/site-packages/urllib3/util/ssl_.py", line 453, in ssl_wrap_socket
+    ssl_sock = _ssl_wrap_socket_impl(sock, context, tls_in_tls, server_hostname)
+  File "/home/user/project/.venv/lib/python3.11/site-packages/urllib3/util/ssl_.py", line 495, in _ssl_wrap_socket_impl
+    return ssl_context.wrap_socket(sock, server_hostname=server_hostname)
+  File "/usr/lib/python3.11/ssl.py", line 517, in wrap_socket
+    return self.sslsocket_class._create(
+  File "/usr/lib/python3.11/ssl.py", line 1075, in _create
+    self.do_handshake()
+  File "/usr/lib/python3.11/ssl.py", line 1346, in do_handshake
+    self._sslobj.do_handshake()
+ssl.SSLCertVerificationError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1007)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/user/project/workers/sync_job.py", line 134, in process_batch
+    response = requests.get(
+  File "/home/user/project/.venv/lib/python3.11/site-packages/requests/api.py", line 73, in get
+    return request("get", url, params=params, **kwargs)
+  File "/home/user/project/.venv/lib/python3.11/site-packages/requests/api.py", line 59, in request
+    return session.request(method=method, url=url, **kwargs)
+  File "/home/user/project/.venv/lib/python3.11/site-packages/requests/sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+  File "/home/user/project/.venv/lib/python3.11/site-packages/requests/sessions.py", line 703, in send
+    r = adapter.send(request, **kwargs)
+  File "/home/user/project/.venv/lib/python3.11/site-packages/requests/adapters.py", line 517, in send
+    raise SSLError(e, request=request)
+requests.exceptions.SSLError: HTTPSConnectionPool(host='api.stripe.com', port=443): Max retries exceeded with url: /v1/balance_transactions?limit=100 (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1007)')))

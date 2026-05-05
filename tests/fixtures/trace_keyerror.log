@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/app/services/user_service.py", line 87, in get_user_profile
+    user = self.cache[user_id]
+  File "/app/services/user_service.py", line 45, in __getitem__
+    return self._store[key]
+KeyError: 'usr_2938471'

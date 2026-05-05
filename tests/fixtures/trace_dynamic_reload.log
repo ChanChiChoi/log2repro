@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/app/hot_reload/watcher.py", line 89, in _reload_module
+    importlib.reload(module)
+  File "/usr/lib/python3.11/importlib/__init__.py", line 168, in reload
+    _bootstrap._exec(spec, module)
+  File "/usr/lib/python3.11/importlib/_bootstrap.py", line 621, in _exec
+    _call_with_frames_cleaned(f"exec", module.__spec__.submodule_search_locations, module)
+  File "/app/models/user.py", line 23, in <module>
+    class User(BaseModel):
+  File "/app/models/user.py", line 31, in User
+    email: EmailStr = Field(..., description="User email")
+  File "/app/.venv/lib/python3.11/site-packages/pydantic/fields.py", line 485, in Field
+    raise PydanticUserError("Field 'email' requires 'email-validator' package")
+pydantic_core._pydantic_core.PydanticUserError: Field 'email' requires 'email-validator' package

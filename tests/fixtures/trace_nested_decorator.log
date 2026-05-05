@@ -1,0 +1,18 @@
+Traceback (most recent call last):
+  File "/app/core/engine.py", line 312, in execute_pipeline
+    result = stage.run(context)
+  File "/app/core/stages.py", line 89, in run
+    return self._execute_with_retry(data, max_attempts=3)
+  File "/app/core/stages.py", line 104, in _execute_with_retry
+    return self._process(data)
+  File "/app/core/stages.py", line 118, in _process
+    transformed = self._apply_transforms(data)
+  File "/app/core/stages.py", line 135, in _apply_transforms
+    result = transform.apply(result)
+  File "/app/transforms/validation.py", line 67, in apply
+    self._validate_schema(record)
+  File "/app/transforms/validation.py", line 82, in _validate_schema
+    self._check_required_fields(record, schema)
+  File "/app/transforms/validation.py", line 95, in _check_required_fields
+    raise SchemaError(f"Missing required field: {field!r}")
+app.exceptions.SchemaError: Missing required field: 'created_at'

@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/app/main.py", line 34, in main
+    async for chunk in stream_data(session_id):
+  File "/app/streams/reader.py", line 67, in stream_data
+    async for record in cursor:
+  File "/app/streams/reader.py", line 82, in stream_data
+    yield await transform(record)
+  File "/app/streams/reader.py", line 94, in transform
+    parsed = json.loads(record["payload"])
+  File "/app/streams/reader.py", line 98, in transform
+    raise StreamError(f"Failed to parse record {record['id']}: {e}") from e
+app.streams.errors.StreamError: Failed to parse record rec_78234: Expecting value: line 1 column 1 (char 0)

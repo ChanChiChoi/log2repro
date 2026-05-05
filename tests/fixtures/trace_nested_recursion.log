@@ -1,0 +1,22 @@
+Traceback (most recent call last):
+  File "/app/ast/evaluator.py", line 210, in evaluate
+    return self._eval_node(root)
+  File "/app/ast/evaluator.py", line 225, in _eval_node
+    return self._eval_binary_op(node)
+  File "/app/ast/evaluator.py", line 267, in _eval_binary_op
+    left = self._eval_node(node.left)
+  File "/app/ast/evaluator.py", line 225, in _eval_node
+    return self._eval_binary_op(node)
+  File "/app/ast/evaluator.py", line 267, in _eval_binary_op
+    left = self._eval_node(node.left)
+  File "/app/ast/evaluator.py", line 225, in _eval_node
+    return self._eval_binary_op(node)
+  File "/app/ast/evaluator.py", line 273, in _eval_binary_op
+    right = self._eval_node(node.right)
+  File "/app/ast/evaluator.py", line 231, in _eval_node
+    return self._eval_call(node)
+  File "/app/ast/evaluator.py", line 305, in _eval_call
+    func = self._resolve_function(node.name)
+  File "/app/ast/evaluator.py", line 318, in _resolve_function
+    raise UndefinedFunction(f"Unknown function: {name!r}")
+app.ast.errors.UndefinedFunction: Unknown function: 'nonexistent_func'

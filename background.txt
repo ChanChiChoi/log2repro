@@ -1,0 +1,137 @@
+log2repro（错误日志 → 可运行复现代码生成器）
+痛点：线上报错日志冗长，人工写复现脚本耗时长；新手常卡在环境依赖或数据构造上。
+核心功能：
+输入堆栈/日志片段，自动提取：关键变量、调用链、依赖版本
+生成最小可运行复现脚本（Python/JS/Go）
+自动附加 requirements.txt/Dockerfile/Mock 数据
+支持一键提交为 GitHub Issue 模板
+技术栈：Python + Tree-sitter + AST 解析 + LLM + Jinja2 + GitHub CLI
+
+“实现日志到复现代码的自动化转换 pipeline，结合 AST 解析与 LLM 结构化生成；平均复现时间从 45min 缩短至 3min，已接入 3 个内部项目排障流程。”
+
+GitHub 增长策略：
+提供 vscode-extension 或 cli-plugin 快速体验
+录制 30 秒 GIF：粘贴报错 → 输出可运行 demo → 一键提 Issue
+投稿 awesome-devtools、开源社区周刊
+
+D1
+明确 MVP 范围，写 spec.md（输入/输出/边界条件）
+用 AI 帮你拆解需求、画架构图、列 checklist
+D2-3
+核心逻辑开发（CLI/代理/解析器）
+让 AI 生成模块骨架 → 你调通接口 → AI 写单元测试
+D4
+加可观测性/部署/CI
+AI 生成 Dockerfile、github/workflows、监控脚本
+D5
+跑通端到端流程 + 写 README
+AI 生成多语言 README、示例、Troubleshooting
+D6-7
+补充测试/文档/发布
+AI 生成 benchmark 脚本、迁移指南、Changelog
+
+：log2repro 与 Sentry / Langfuse 不是竞品关系，而是 Debug 流水线上的不同环节。 它的核心定位是 “错误监控 → 本地复现” 之间的最后一公里加速器。
+下面从架构定位、技术差异、联动价值、简历包装四个维度拆解：
+📊 一、定位对比矩阵
+维度
+Sentry
+Langfuse
+log2repro
+核心目标
+线上错误实时捕获、聚合、告警
+LLM 调用追踪、Prompt 版本、成本/评估
+将任意错误日志自动转为 本地可运行的复现脚本
+输出形态
+堆栈聚合图、用户上下文、Breadcrumb
+Trace 树、Prompt Diff、Token/延迟指标
+reproduce.py + requirements.txt + Mock 数据 + 一键 Issue 模板
+集成方式
+必须埋 SDK / 改代码 / 配后端
+需集成 SDK 或代理网关
+零侵入：支持粘贴文本、CI 日志、邮件、Webhook
+解决阶段
+监控 → 发现 → 初步定位
+观测 → 评估 → Prompt/参数迭代
+定位 → 构造复现环境 → 修复验证
+技术重心
+聚合算法、性能开销控制、安全合规
+分布式追踪、Prompt 管理、LLM 评估框架
+AST 静态分析 + LLM 上下文补全 + 沙箱执行验证
+🛡️ 二、对比 Sentry 的核心优势
+Sentry 给“案发现场照片”，log2repro 给“可重播的案发现场”
+Sentry 告诉你 TypeError: 'NoneType' object has no attribute 'id' 发生在 service.py:42，但不会告诉你 user 对象为什么是 None、外部 API 返回了什么、环境变量是否缺失。
+log2repro 会从日志/堆栈中逆向提取：关键变量快照、依赖版本、网络请求 Mock，直接生成一个 pytest 可跑的脚本。
+零侵入 & 遗留系统友好
+老项目、第三方 SDK、外包代码、开源 Issue 经常无法接入 Sentry SDK。log2repro 直接吃纯文本/JSON 日志，开箱即用。
+跳过“人工造数据”瓶颈
+工程师 60% 的 debug 时间花在“猜参数、翻数据库、Mock 第三方”。log2repro 用 AST + LLM 自动推断边界条件，生成最小复现路径。
+🔍 三、对比 Langfuse 的核心优势
+通用性 vs 垂直性
+Langfuse 专为 LLM Pipeline 设计（Trace/Prompt/Eval）。log2repro 是通用日志解析器，支持 Python/Node/Java/Go/C++ 堆栈，LLM 日志只是其中一类输入。
+不关心“Prompt 怎么变”，只关心“报错怎么本地跑”
+Langfuse 记录 LLM 调用链，但依然需要工程师手动把失败 Trace 转成本地脚本。log2repro 直接输出可执行代码，缩短复现链路。
+对 LLM 场景的互补价值
+Langfuse 记录失败调用 → 导出日志 → log2repro 解析 → 生成复现脚本 → 本地跑通 → 修复 Prompt/代码 → 回传 Langfuse 验证。形成闭环。
+🤝 四、真正的护城河：如何证明它不是“套壳 AI”？
+如果面试或社区问 “这不就是调个 OpenAI API 吗？”，你需要在架构中埋入 3 个技术锚点：
+锚点
+实现方式
+为什么有价值
+AST 预解析降幻觉
+用 tree-sitter 提取真实变量名、函数签名、导入路径，只让 LLM 补全缺失上下文
+纯 Prompt 容易编造不存在的库或变量，AST 提供硬约束
+沙箱执行验证
+生成脚本后自动在 Docker/ephemeral-env 中跑一次，验证是否能触发原错误
+避免“能编译但不能复现”的无效输出，提升可信度
+多源日志适配层
+设计 Parser Plugin 架构：支持 Sentry JSON、Langfuse Trace、GitHub Actions Log、纯 StackTrace
+展现工程抽象能力，非单点 Prompt 工程
+
+避坑与 MVP 聚焦建议
+不要做全语言支持：MVP 先打透 Python + Node.js（生态最广、AST 工具最成熟），其他语言留 TODO。
+绝不替代 Sentry/Langfuse：明确写 “Complementary tool, not a replacement”。提供 Webhook 对接示例，反而能蹭到它们的生态流量。
+保留人工确认环节：LLM 生成的代码必须带 --review 模式，输出前高亮“推断变量”与“Mock 数据”，避免盲目信任。
+
+
+mvp目录结构和依赖
+log2repro/
+├── pyproject.toml          # poetry/hatch 配置
+├── src/
+│   └── log2repro/
+│       ├── __init__.py
+│       ├── cli.py          # Typer 入口 (log2repro run/verify/config)
+│       ├── parsers/        # 多源日志适配器
+│       │   ├── base.py     # 抽象基类
+│       │   ├── stacktrace.py
+│       │   ├── sentry.py
+│       │   └── ci_log.py
+│       ├── extractors/     # 上下文提取
+│       │   └── ast_parser.py  # Python ast 提取函数签名/导入/变量
+│       ├── generators/     # LLM 驱动代码生成
+│       │   ├── prompts.py
+│       │   └── code_gen.py
+│       ├── validators/     # 沙箱执行 & 自动修复
+│       │   ├── sandbox.py
+│       │   └── auto_fix.py
+│       └── utils/
+│           └── io.py
+├── tests/
+│   ├── fixtures/           # 5+ 真实报错样本
+│   └── test_*.py
+└── examples/               # 一键体验脚本
+
+
+核心依赖
+[project]
+name = "log2repro"
+version = "0.1.0"
+dependencies = [
+  "typer>=0.9.0",
+  "litellm>=1.30.0",      # 统一 OpenAI/Anthropic/本地模型调用
+  "jinja2>=3.1.2",        # 模板渲染
+  "pydantic>=2.0.0",      # 数据结构校验
+  "tree-sitter>=0.20.0",  # 可选：v2 支持多语言
+  "pytest>=7.4.0",        # 测试 & 沙箱验证
+  "rich>=13.0.0"          # 终端 UI
+]
+

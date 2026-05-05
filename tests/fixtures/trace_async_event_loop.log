@@ -1,0 +1,23 @@
+Traceback (most recent call last):
+  File "/app/main.py", line 52, in <module>
+    result = sync_wrapper(fetch_data(user_id))
+  File "/app/utils/async_helpers.py", line 23, in sync_wrapper
+    loop = asyncio.get_event_loop()
+  File "/usr/lib/python3.11/asyncio/events.py", line 677, in get_event_loop
+    raise RuntimeError('There is no current event loop in thread %r.'
+RuntimeError: There is no current event loop in thread 'MainThread'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/main.py", line 58, in <module>
+    loop = asyncio.new_event_loop()
+  File "/app/main.py", line 62, in <module>
+    result = loop.run_until_complete(fetch_data(user_id))
+  File "/app/services/user_service.py", line 89, in fetch_data
+    async with aiohttp.ClientSession() as session:
+  File "/app/services/user_service.py", line 95, in fetch_data
+    async with session.get(f"{BASE_URL}/users/{user_id}") as resp:
+  File "/app/.venv/lib/python3.11/site-packages/aiohttp/client.py", line 1355, in __aenter__
+    self._resp = await self._coro
+aiohttp.client_exceptions.ClientResponseError: 404, message='Not Found', url=URL('https://api.example.com/users/usr_99999')

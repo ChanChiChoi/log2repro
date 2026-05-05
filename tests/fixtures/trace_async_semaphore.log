@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "/app/crawler/scheduler.py", line 120, in crawl_all
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+  File "/app/crawler/worker.py", line 45, in fetch_page
+    async with sem:
+  File "/usr/lib/python3.11/asyncio/locks.py", line 155, in __aenter__
+    await self.acquire()
+  File "/usr/lib/python3.11/asyncio/locks.py", line 138, in acquire
+    raise RuntimeError("Cannot acquire lock, shutdown in progress")
+RuntimeError: Cannot acquire lock, shutdown in progress
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/main.py", line 15, in <module>
+    scheduler.crawl_all(urls)
+  File "/app/crawler/scheduler.py", line 125, in crawl_all
+    raise CrawlerError(f"{failed} out of {len(tasks)} tasks failed")
+app.crawler.errors.CrawlerError: 3 out of 10 tasks failed

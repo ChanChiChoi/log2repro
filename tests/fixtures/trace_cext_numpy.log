@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/app/ml/pipeline.py", line 134, in train
+    loss = self._compute_loss(predictions, targets)
+  File "/app/ml/pipeline.py", line 156, in _compute_loss
+    return np.mean((predictions - targets) ** 2)
+  File "/app/.venv/lib/python3.11/site-packages/numpy/core/_methods.py", line 118, in _mean
+    ret = umr_sum(arr, axis, dtype, out, keepdims, where=where)
+numpy.core._exceptions._UFuncNoLoopError: ufunc 'subtract' did not contain a loop with signature matching types (dtype('float64'), dtype('<U5')) -> None

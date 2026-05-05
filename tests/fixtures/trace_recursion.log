@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/app/utils/tree.py", line 42, in traverse
+    traverse(child, depth + 1)
+  File "/app/utils/tree.py", line 42, in traverse
+    traverse(child, depth + 1)
+  File "/app/utils/tree.py", line 42, in traverse
+    traverse(child, depth + 1)
+  [Previous line repeated 991 more times]
+  File "/app/utils/tree.py", line 38, in traverse
+    if node.children:
+RecursionError: maximum recursion depth exceeded

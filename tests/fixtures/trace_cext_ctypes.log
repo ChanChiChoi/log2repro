@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "/app/native/wrapper.py", line 45, in process_image
+    result = self._lib.process(buffer, width, height, channels)
+  File "/app/native/wrapper.py", line 62, in process_image
+    self._lib.process.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_int]
+OSError: [Errno 0] Error
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/api/images.py", line 78, in upload
+    processed = processor.process_image(raw_bytes, width=640, height=480, channels=3)
+  File "/app/native/wrapper.py", line 68, in process_image
+    raise NativeError(f"libimageproc crashed: {ctypes.get_errno()}")
+app.native.errors.NativeError: libimageproc crashed: 11 (Resource temporarily unavailable)

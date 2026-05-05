@@ -1,0 +1,22 @@
+Traceback (most recent call last):
+  File "/app/protocol/decoder.py", line 67, in decode_frame
+    header = struct.unpack('!IHH', data[:8])
+struct.error: unpack requires a buffer of 8 bytes
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/protocol/handler.py", line 134, in on_data
+    frame = self._decoder.decode_frame(chunk)
+  File "/app/protocol/decoder.py", line 75, in decode_frame
+    raise ProtocolError(f"Truncated frame: {e}") from e
+app.protocol.errors.ProtocolError: Truncated frame: unpack requires a buffer of 8 bytes
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/server/tcp.py", line 89, in _handle_client
+    self._protocol.on_data(data)
+  File "/app/protocol/handler.py", line 142, in on_data
+    raise ConnectionError(f"Protocol violation: {e}") from e
+ConnectionError: Protocol violation: Truncated frame: unpack requires a buffer of 8 bytes

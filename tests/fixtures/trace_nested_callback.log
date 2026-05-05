@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/app/reactive/engine.py", line 156, in emit
+    listener(event)
+  File "/app/reactive/engine.py", line 168, in _dispatch
+    handler.callback(event.data)
+  File "/app/plugins/notifications.py", line 42, in on_change
+    self._send_notification(user, change)
+  File "/app/plugins/notifications.py", line 58, in _send_notification
+    template = self._render_template(template_name, context)
+  File "/app/plugins/notifications.py", line 73, in _render_template
+    return self.env.get_template(name).render(**context)
+  File "/app/plugins/notifications.py", line 78, in _render_template
+    raise TemplateError(f"Template rendering failed: {e}") from e
+jinja2.exceptions.TemplateError: Template rendering failed: 'user_email' is undefined

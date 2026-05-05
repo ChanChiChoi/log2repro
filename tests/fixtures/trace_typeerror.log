@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/app/pipeline/etl.py", line 203, in transform_batch
+    records = [transform(row) for row in batch]
+  File "/app/pipeline/etl.py", line 203, in <listcomp>
+    records = [transform(row) for row in batch]
+  File "/app/pipeline/transforms.py", line 67, in transform
+    timestamp = parse_date(row["created_at"])
+  File "/app/pipeline/transforms.py", line 34, in parse_date
+    return datetime.strptime(date_str, fmt)
+TypeError: strptime() argument 1 must be str, not int

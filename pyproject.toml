@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "log2repro"
+version = "0.1.0"
+description = "Error log → runnable reproduction code generator"
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = [
+    "typer>=0.9.0",
+    "litellm>=1.30.0",      # 统一 OpenAI/Anthropic/本地模型调用
+    "jinja2>=3.1.2",        # 模板渲染
+    "pydantic>=2.0.0",      # 数据结构校验
+    "tree-sitter>=0.20.0",  # 可选：v2 支持多语言
+    "pytest>=7.4.0",        # 测试 & 沙箱验证
+    "rich>=13.0.0",         # 终端 UI
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest-cov>=4.0.0",
+]
+
+[[tool.uv.index]]
+url = "https://mirrors.aliyun.com/pypi/simple/"
+default = true
+
+[project.scripts]
+log2repro = "log2repro.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/log2repro"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "pytest-cov>=7.1.0",
+]

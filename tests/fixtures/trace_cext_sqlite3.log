@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/app/data/importer.py", line 112, in bulk_import
+    cursor.executemany(sql, batch)
+sqlite3.OperationalError: database is locked
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/main.py", line 28, in <module>
+    importer.bulk_import(records, batch_size=1000)
+  File "/app/data/importer.py", line 118, in bulk_import
+    raise ImportError(f"Failed after {imported} records: {e}") from e
+app.data.errors.ImportError: Failed after 5234 records: database is locked

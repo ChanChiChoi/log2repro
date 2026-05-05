@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/home/user/project/app.py", line 10, in main
+    result = process_data(data)
+  File "/home/user/project/app.py", line 25, in process_data
+    validated = validate_input(payload)
+  File "/home/user/project/utils.py", line 42, in validate_input
+    if user_id is None:
+ValueError: user_id must not be None

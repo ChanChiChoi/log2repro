@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "/app/cache/backend.py", line 78, in get
+    return pickle.loads(raw)
+  File "/app/cache/backend.py", line 85, in get
+    return self._deserialize(raw)
+_pickle.UnpicklingError: invalid load key, '\x00'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/api/views.py", line 56, in get_user
+    user = cache.get(f"user:{user_id}")
+  File "/app/cache/backend.py", line 92, in get
+    raise CacheError(f"Failed to deserialize key {key!r}: {e}") from e
+app.cache.errors.CacheError: Failed to deserialize key 'user:12345': invalid load key, '\x00'.

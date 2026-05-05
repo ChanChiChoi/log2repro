@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "/app/config/registry.py", line 67, in _load_backend
+    mod = __import__(module_path, fromlist=[class_name])
+  File "/app/config/registry.py", line 82, in _load_backend
+    cls = getattr(mod, class_name)
+AttributeError: module 'app.backends.postgres' has no attribute 'PostgresReplicaBackend'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/main.py", line 12, in <module>
+    registry.initialize()
+  File "/app/config/registry.py", line 45, in initialize
+    self._load_backend(backend_cfg)
+  File "/app/config/registry.py", line 85, in _load_backend
+    raise ConfigError(f"Backend {module_path!r} missing class {class_name!r}")
+app.config.errors.ConfigError: Backend 'app.backends.postgres' missing class 'PostgresReplicaBackend'

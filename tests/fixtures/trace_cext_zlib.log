@@ -1,0 +1,22 @@
+Traceback (most recent call last):
+  File "/app/storage/compressor.py", line 45, in decompress
+    return zlib.decompress(data, self.wbits)
+zlib.error: Error -3 while decompressing data: incorrect header check
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/storage/reader.py", line 112, in read_blob
+    raw = self._decompress(compressed)
+  File "/app/storage/compressor.py", line 52, in decompress
+    raise StorageError(f"Decompression failed: {e}") from e
+app.storage.errors.StorageError: Decompression failed: Error -3 while decompressing data: incorrect header check
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/api/assets.py", line 78, in download
+    blob = storage.read_blob(asset_id)
+  File "/app/storage/reader.py", line 118, in read_blob
+    raise APIError(500, f"Storage corrupted for {asset_id}") from e
+app.api.errors.APIError: 500 - Storage corrupted for asset_abc123

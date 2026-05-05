@@ -1,0 +1,23 @@
+Traceback (most recent call last):
+  File "/app/worker/supervisor.py", line 134, in run
+    self._start_workers(n=4)
+  File "/app/worker/supervisor.py", line 156, in _start_workers
+    worker.start()
+  File "/app/worker/process.py", line 45, in start
+    self._proc = multiprocessing.Process(target=self._run)
+  File "/usr/lib/python3.11/multiprocessing/process.py", line 121, in start
+    self._popen = self._Popen(self)
+  File "/usr/lib/python3.11/multiprocessing/popen_fork.py", line 69, in _Popen
+    return self._launch(process_obj)
+  File "/usr/lib/python3.11/multiprocessing/popen_fork.py", line 74, in _launch
+    child_r, child_w = os.pipe()
+OSError: [Errno 24] Too many open files
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/main.py", line 18, in <module>
+    supervisor.run()
+  File "/app/worker/supervisor.py", line 162, in run
+    raise SupervisorError(f"Failed to start workers: {e}") from e
+app.worker.errors.SupervisorError: Failed to start workers: [Errno 24] Too many open files

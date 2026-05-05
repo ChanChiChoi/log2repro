@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "/app/indexer/search.py", line 67, in search
+    results = self._search_index(query)
+  File "/app/indexer/search.py", line 89, in _search_index
+    chunk = self._mmap_obj[offset:offset + size]
+  File "/app/indexer/search.py", line 95, in _search_index
+    raise IndexError(f"mmap offset {offset} out of range (size={len(self._mmap_obj)})")
+IndexError: mmap offset 2147483648 out of range (size=1073741824)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/main.py", line 42, in handle_query
+    results = searcher.search(query_text)
+  File "/app/indexer/search.py", line 98, in search
+    raise SearchError(f"Index corrupted: {e}") from e
+app.indexer.errors.SearchError: Index corrupted: mmap offset 2147483648 out of range (size=1073741824)

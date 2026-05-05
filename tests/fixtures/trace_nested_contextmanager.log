@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/app/main.py", line 18, in main
+    with transaction(db) as tx:
+  File "/usr/lib/python3.11/contextlib.py", line 144, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/app/db/transaction.py", line 45, in transaction
+    yield conn
+  File "/app/main.py", line 22, in main
+    tx.execute("INSERT INTO orders (id, total) VALUES (?, ?)", order_id, total)
+  File "/app/db/connection.py", line 112, in execute
+    cursor = self._conn.cursor()
+  File "/app/db/connection.py", line 98, in cursor
+    if self._conn.is_closed:
+sqlite3.ProgrammingError: Cannot operate on a closed database.

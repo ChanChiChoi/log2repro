@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/app/main.py", line 23, in process_request
+    result = handler.handle(payload)
+  File "/app/handlers/data_export.py", line 56, in handle
+    df = self._build_dataframe(records)
+  File "/app/handlers/data_export.py", line 78, in _build_dataframe
+    import pandas as pd
+  File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+  File "/app/handlers/data_export.py", line 82, in _build_dataframe
+    df = pd.DataFrame(records)
+TypeError: 'NoneType' object is not iterable
